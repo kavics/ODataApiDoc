@@ -13,10 +13,10 @@
         /// </summary>
         public bool DocsAlert { get; set; }
 
-        ///// <summary>
-        ///// Gets or sets whether show operations in test projects, sn-webpages, sn-compatibility-pack, sn-workspaces
-        ///// </summary>
-        //public bool All { get; set; }
+        /// <summary>
+        /// Gets or sets whether also show operations from test projects and .NET Framework projects.
+        /// </summary>
+        public bool All { get; set; }
 
 
     }

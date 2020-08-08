@@ -69,11 +69,18 @@ namespace ODataApiDoc
             var fwOps = operations.Where(o => o.ProjectType == ProjectType.NETFramework || o.ProjectType == ProjectType.Unknown).ToArray();
             var ops = operations.Except(testOps).Except(fwOps).ToArray();
 
-            WriteTable(".NET Standard / Core Operations", ops, output, options);
-            WriteTable(".NET Framework Operations", fwOps, output, options);
-            WriteTable("Test Operations", testOps, output, options);
+            if (options.All)
+            {
+                WriteTable(".NET Standard / Core Operations", ops, output, options);
+                WriteTable(".NET Framework Operations", fwOps, output, options);
+                WriteTable("Test Operations", testOps, output, options);
+            }
+            else
+            {
+                WriteTable("Operations", ops, output, options);
+            }
 
-            foreach (var op in operations)
+            foreach (var op in (options.All ? operations.ToArray() : ops))
             {
                 output.WriteLine("## {0}", op.OperationName);
                 head.Clear();
