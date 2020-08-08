@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.WebSockets;
+using System.Xml;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -43,14 +45,14 @@ namespace ODataApiDoc
                 if (Path.GetExtension(input) != ".cs")
                     throw new NotSupportedException("Only csharp file (*.cs extension) is supported.");
                 //rootPath = Path.GetDirectoryName(input);
-                AddOperationsFromFile(input, input, operations, options.ShowAst);
+                AddOperationsFromFile(input, input, operations, null, options.ShowAst);
             }
             else
             {
                 if (!Directory.Exists(input))
                     throw new ArgumentException("Unknown file or directory: " + input);
                 //rootPath = input.TrimEnd('\\', '/');
-                AddOperationsFromDirectory(input, input, operations, options.ShowAst);
+                AddOperationsFromDirectory(input, input, operations, null, options.ShowAst);
             }
 
             Console.WriteLine(" ".PadRight(Console.BufferWidth - 1));
@@ -62,12 +64,13 @@ namespace ODataApiDoc
                 .ToList();
             output.WriteLine("Path: {0}, operations: {1} ", input, operations.Count);
 
-            var testOps = operations.Where(o => o.File.Contains("\\Tests\\")).ToArray();
-            var servicesOps = operations.Where(o => o.File.Contains("\\Services\\")).ToArray();
-            var ops = operations.Except(testOps).Except(servicesOps).ToArray();
+            //var testOps = operations.Where(o => o.File.Contains("\\Tests\\")).ToArray();
+            var testOps = operations.Where(o => o.Project?.IsTestProject ?? true).ToArray();
+            var fwOps = operations.Where(o => o.ProjectType == ProjectType.NETFramework || o.ProjectType == ProjectType.Unknown).ToArray();
+            var ops = operations.Except(testOps).Except(fwOps).ToArray();
 
-            WriteTable(".NET Core Operations", ops, output, options);
-            WriteTable(".NET Framework Operations", servicesOps, output, options);
+            WriteTable(".NET Standard / Core Operations", ops, output, options);
+            WriteTable(".NET Framework Operations", fwOps, output, options);
             WriteTable("Test Operations", testOps, output, options);
 
             foreach (var op in operations)
@@ -76,6 +79,7 @@ namespace ODataApiDoc
                 head.Clear();
                 head.Add(op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**");
                 head.Add($"- Repository: **{op.GithubRepository}**");
+                head.Add($"- Project: **{op.ProjectName}**");
                 head.Add($"- File: **{op.FileRelative}**");
                 head.Add($"- Class: **{op.Namespace}.{op.ClassName}**");
                 head.Add($"- Method: **{op.MethodName}**");
@@ -138,26 +142,28 @@ namespace ODataApiDoc
             var ordered = ops.OrderBy(o => o.File).ThenBy(o => o.OperationName);
             if (options.DocsAlert)
             {
-                output.WriteLine("| Operation | Doc | Type | Repository | File | Directory |");
-                output.WriteLine("| --------- | --- | ---- | ---------- | ---- | --------- |");
+                output.WriteLine("| Operation | Doc | Type | Repository | Project | File | Directory |");
+                output.WriteLine("| --------- | --- | ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} | {6} |", op.OperationName,
+                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} | {6} | {7} |", op.OperationName,
                         op.OperationName.ToLowerInvariant(),
                         string.IsNullOrEmpty(op.Documentation) ? "" : "ok",
                         op.IsAction ? "Action" : "Function",
                         op.GithubRepository,
+                        op.ProjectName,
                         Path.GetFileName(op.FileRelative),
                         Path.GetDirectoryName(op.FileRelative));
             }
             else
             {
-                output.WriteLine("| Operation | Type | Repository | File | Directory |");
-                output.WriteLine("| --------- | ---- | ---------- | ---- | --------- |");
+                output.WriteLine("| Operation | Type | Repository | Project | File | Directory |");
+                output.WriteLine("| --------- | ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} |", op.OperationName,
+                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} | {6} |", op.OperationName,
                         op.OperationName.ToLowerInvariant(),
                         op.IsAction ? "Action" : "Function",
                         op.GithubRepository,
+                        op.ProjectName,
                         Path.GetFileName(op.FileRelative),
                         Path.GetDirectoryName(op.FileRelative));
             }
@@ -172,19 +178,78 @@ namespace ODataApiDoc
         }
 
         private static void AddOperationsFromDirectory(string root, string path, List<OperationInfo> operations,
-            bool showAst)
+            ProjectInfo currentProject, bool showAst)
         {
-            if (path.EndsWith("\\obj"))
+            if (path.EndsWith("\\obj", StringComparison.OrdinalIgnoreCase))
                 return;
 
+            var projectPath = Directory.GetFiles(path, "*.csproj").FirstOrDefault();
+            if (projectPath != null)
+                currentProject = CreateProject(projectPath);
+
             foreach (var directory in Directory.GetDirectories(path))
-                AddOperationsFromDirectory(root, directory, operations, showAst);
+                AddOperationsFromDirectory(root, directory, operations, currentProject, showAst);
             foreach (var file in Directory.GetFiles(path, "*.cs"))
-                AddOperationsFromFile(root, file, operations, showAst);
+                AddOperationsFromFile(root, file, operations, currentProject, showAst);
+        }
+
+        private static ProjectInfo CreateProject(string projectPath)
+        {
+            var path = Path.GetDirectoryName(projectPath);
+            var name = Path.GetFileNameWithoutExtension(projectPath);
+            var typeName = GetProjectTypeName(projectPath);
+            var type = GetProjectType(typeName);
+            var isTest = name.EndsWith("test", StringComparison.OrdinalIgnoreCase) ||
+                         name.EndsWith("tests", StringComparison.OrdinalIgnoreCase);
+
+            return new ProjectInfo
+            {
+                Path = path,
+                Name = name,
+                TypeName = typeName,
+                Type = type,
+                IsTestProject = isTest
+            };
+        }
+
+        private static string GetProjectTypeName(string projectPath)
+        {
+            var src = File.ReadAllLines(projectPath).Select(x=>x.Trim()).ToArray();
+            var targetFwLine = src.FirstOrDefault(x => x.StartsWith("<TargetFramework>"));
+            if (targetFwLine != null)
+            {
+                var typeName = targetFwLine
+                    .Replace("</TargetFramework>", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("<TargetFramework>", "", StringComparison.OrdinalIgnoreCase);
+                return typeName;
+            }
+
+            var targetFwVersionLine = src.FirstOrDefault(x => x.StartsWith("<TargetFrameworkVersion>"));
+            if (targetFwVersionLine != null)
+            {
+                var version = targetFwVersionLine
+                    .Replace("</TargetFrameworkVersion>", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("<TargetFrameworkVersion>v", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("<TargetFrameworkVersion>", "", StringComparison.OrdinalIgnoreCase);
+                return "netframework" + version;
+            }
+
+            throw new ApplicationException("Unknown project: " + projectPath);
+        }
+
+        private static ProjectType GetProjectType(string typeName)
+        {
+            if (typeName.StartsWith("netcoreapp"))
+                return ProjectType.NETCore;
+            if (typeName.StartsWith("netstandard"))
+                return ProjectType.NETStandard;
+            if (typeName.StartsWith("netframework"))
+                return ProjectType.NETFramework;
+            return ProjectType.Unknown;
         }
 
         private static void AddOperationsFromFile(string root, string path, List<OperationInfo> operations,
-            bool showAst)
+            ProjectInfo currentProject, bool showAst)
         {
             if (path.Length > root.Length)
             {
@@ -194,9 +259,12 @@ namespace ODataApiDoc
 
             var code = new StreamReader(path).ReadToEnd();
             var tree = CSharpSyntaxTree.ParseText(code);
-
             var walker = new MainWalker(path, showAst);
             walker.Visit(tree.GetRoot());
+
+            foreach (var op in walker.Operations)
+                op.Project = currentProject;
+
             operations.AddRange(walker.Operations);
 
             if (walker.Operations.Count > 0)

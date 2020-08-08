@@ -13,6 +13,7 @@ namespace ODataApiDoc
         public string File { get; set; }
         public string Namespace { get; set; }
         public string ClassName { get; set; }
+        public ProjectInfo Project { get; set; }
         public string MethodName { get; set; }
         public string OperationName { get; set; }
         public string Description { get; set; }
@@ -55,6 +56,8 @@ namespace ODataApiDoc
             }
         }
 
+        public string ProjectName => Project?.Name ?? "";
+        public ProjectType ProjectType => Project?.Type ?? ODataApiDoc.ProjectType.Unknown;
 
         private string CR = Environment.NewLine;
 
