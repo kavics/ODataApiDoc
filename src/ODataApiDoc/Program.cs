@@ -65,7 +65,8 @@ namespace ODataApiDoc
                 .Where(x => x.IsValid)
                 //.Where(x=> !string.IsNullOrEmpty(x.Documentation))
                 .ToList();
-            output.WriteLine("Path: {0}, operations: {1} ", input, operations.Count);
+
+            //output.WriteLine("Path: {0}, operations: {1} ", input, operations.Count);
 
             //var testOps = operations.Where(o => o.File.Contains("\\Tests\\")).ToArray();
             var testOps = operations.Where(o => o.Project?.IsTestProject ?? true).ToArray();
