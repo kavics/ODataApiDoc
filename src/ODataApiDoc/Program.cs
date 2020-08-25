@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Security;
 using System.Xml;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -31,6 +32,9 @@ namespace ODataApiDoc
             var mdFile = Path.Combine(options.Output, name + ".md");
             var tsvFile = Path.Combine(options.Output, name + ".tsv");
 
+            if (!Directory.Exists(options.Output))
+                Directory.CreateDirectory(options.Output);
+
             using (var writer = new StreamWriter(mdFile, false))
                 Run(writer, options);
         }
@@ -57,7 +61,6 @@ namespace ODataApiDoc
 
             Console.WriteLine(" ".PadRight(Console.BufferWidth - 1));
 
-            var head = new List<string>();
             operations = operations
                 .Where(x => x.IsValid)
                 //.Where(x=> !string.IsNullOrEmpty(x.Documentation))
@@ -80,63 +83,97 @@ namespace ODataApiDoc
                 WriteTable("Operations", ops, output, options);
             }
 
+            var writers = new Dictionary<string, TextWriter>();
+
             foreach (var op in (options.All ? operations.ToArray() : ops))
             {
-                output.WriteLine("## {0}", op.OperationName);
-                head.Clear();
-                head.Add(op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**");
-                head.Add($"- Repository: **{op.GithubRepository}**");
-                head.Add($"- Project: **{op.ProjectName}**");
-                head.Add($"- File: **{op.FileRelative}**");
-                head.Add($"- Class: **{op.Namespace}.{op.ClassName}**");
-                head.Add($"- Method: **{op.MethodName}**");
-                if (op.Icon != null)
-                    head.Add($"- Icon: **{op.Icon}**");
-                output.Write(string.Join(Environment.NewLine, head));
-                output.WriteLine(".");
-
-
-                output.WriteLine("### Parameters:");
-                foreach (var prm in op.Parameters)
-                    output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
-                        prm.IsOptional ? " optional" : "", prm.Documentation);
-                if (op.ReturnValue.Type != "void")
-                    output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
-                        op.ReturnValue.Documentation);
-
-                if (op.Description != null)
+                try
                 {
-                    output.WriteLine("### Description:");
-                    output.WriteLine();
-                    output.WriteLine(op.Description);
+                    var writer = GetOrCreateWriter(options.Output, GetOutputFile(op), writers);
+                    WriteOperation(op, writer, options);
                 }
-
-                output.WriteLine();
-                if (string.IsNullOrEmpty(op.Documentation))
+                catch (Exception e)
                 {
-                    if (options.DocsAlert)
-                        output.WriteLine("MISSING DOCUMENTATION");
+                    //UNDONE: handle errors
                 }
-                else
-                {
-                    output.WriteLine("### Documentation:");
-                    output.WriteLine(op.Documentation);
-                }
-
-                output.WriteLine();
-                if (0 < op.ContentTypes.Count + op.AllowedRoles.Count + op.RequiredPermissions.Count +
-                    op.RequiredPolicies.Count + op.Scenarios.Count)
-                {
-                    output.WriteLine("### Filters and authorization:");
-                    WriteAttribute("ContentTypes", op.ContentTypes, output);
-                    WriteAttribute("AllowedRoles", op.AllowedRoles, output);
-                    WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
-                    WriteAttribute("RequiredPolicies", op.RequiredPolicies, output);
-                    WriteAttribute("Scenarios", op.Scenarios, output);
-                }
-
-                output.WriteLine();
             }
+
+            foreach (var writer in writers.Values)
+            {
+                writer.Flush();
+                writer.Close();
+            }
+        }
+
+        private static TextWriter GetOrCreateWriter(string outDir, string outFile, Dictionary<string, TextWriter> writers)
+        {
+            if (!writers.TryGetValue(outFile, out var writer))
+            {
+                writer = new StreamWriter(Path.Combine(outDir, outFile), false);
+                writers.Add(outFile, writer);
+            }
+
+            return writer;
+        }
+        private static void WriteOperation(OperationInfo op, TextWriter output, Options options)
+        {
+            output.WriteLine("## {0}", op.OperationName);
+            var head = new List<string>
+            {
+                op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**",
+                $"- Repository: **{op.GithubRepository}**",
+                $"- Project: **{op.ProjectName}**",
+                $"- File: **{op.FileRelative}**",
+                $"- Class: **{op.Namespace}.{op.ClassName}**",
+                $"- Method: **{op.MethodName}**"
+            };
+            if (op.Icon != null)
+                head.Add($"- Icon: **{op.Icon}**");
+
+            output.Write(string.Join(Environment.NewLine, head));
+            output.WriteLine(".");
+
+
+            output.WriteLine("### Parameters:");
+            foreach (var prm in op.Parameters)
+                output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
+                    prm.IsOptional ? " optional" : "", prm.Documentation);
+            if (op.ReturnValue.Type != "void")
+                output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
+                    op.ReturnValue.Documentation);
+
+            if (op.Description != null)
+            {
+                output.WriteLine("### Description:");
+                output.WriteLine();
+                output.WriteLine(op.Description);
+            }
+
+            output.WriteLine();
+            if (string.IsNullOrEmpty(op.Documentation))
+            {
+                if (options.DocsAlert)
+                    output.WriteLine("MISSING DOCUMENTATION");
+            }
+            else
+            {
+                output.WriteLine("### Documentation:");
+                output.WriteLine(op.Documentation);
+            }
+
+            output.WriteLine();
+            if (0 < op.ContentTypes.Count + op.AllowedRoles.Count + op.RequiredPermissions.Count +
+                op.RequiredPolicies.Count + op.Scenarios.Count)
+            {
+                output.WriteLine("### Filters and authorization:");
+                WriteAttribute("ContentTypes", op.ContentTypes, output);
+                WriteAttribute("AllowedRoles", op.AllowedRoles, output);
+                WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
+                WriteAttribute("RequiredPolicies", op.RequiredPolicies, output);
+                WriteAttribute("Scenarios", op.Scenarios, output);
+            }
+
+            output.WriteLine();
         }
 
         private static void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options)
@@ -149,12 +186,14 @@ namespace ODataApiDoc
             var ordered = ops.OrderBy(o => o.File).ThenBy(o => o.OperationName);
             if (options.DocsAlert)
             {
-                output.WriteLine("| Operation | Doc | Type | Repository | Project | File | Directory |");
-                output.WriteLine("| --------- | --- | ---- | ---------- | ------- | ---- | --------- |");
+                output.WriteLine("| Operation | Doc | Category| Type | Repository | Project | File | Directory |");
+                output.WriteLine("| --------- | --- | --------| ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} | {6} | {7} |", op.OperationName,
+                    output.WriteLine("| [{0}](./{1}#{2}) | {3} | {4} | {5} | {6} | {7} | {8} | {9} |", op.OperationName,
+                        GetOutputFile(op).ToLowerInvariant(),
                         op.OperationName.ToLowerInvariant(),
                         string.IsNullOrEmpty(op.Documentation) ? "" : "ok",
+                        op.Category ?? "-",
                         op.IsAction ? "Action" : "Function",
                         op.GithubRepository,
                         op.ProjectName,
@@ -163,11 +202,13 @@ namespace ODataApiDoc
             }
             else
             {
-                output.WriteLine("| Operation | Type | Repository | Project | File | Directory |");
-                output.WriteLine("| --------- | ---- | ---------- | ------- | ---- | --------- |");
+                output.WriteLine("| Operation | Category | Type | Repository | Project | File | Directory |");
+                output.WriteLine("| --------- | -------- | ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](#{1}) | {2} | {3} | {4} | {5} | {6} |", op.OperationName,
+                    output.WriteLine("| [{0}](./{1}#{2}) | {3} | {4} | {5} | {6} | {7} | {8} |", op.OperationName,
+                        GetOutputFile(op).ToLowerInvariant(),
                         op.OperationName.ToLowerInvariant(),
+                        op.Category ?? "-",
                         op.IsAction ? "Action" : "Function",
                         op.GithubRepository,
                         op.ProjectName,
@@ -175,6 +216,11 @@ namespace ODataApiDoc
                         Path.GetDirectoryName(op.FileRelative));
             }
 
+        }
+        private static string GetOutputFile(OperationInfo op)
+        {
+            var name = op.Category ?? "uncategorized";
+            return name + ".md";
         }
 
         private static void WriteAttribute(string name, List<string> values, TextWriter output)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -26,6 +27,8 @@ namespace ODataApiDoc
         public List<string> Scenarios { get; private set; } = new List<string>();
         public List<OperationParameterInfo> Parameters { get; } = new List<OperationParameterInfo>();
         public OperationParameterInfo ReturnValue { get; } = new OperationParameterInfo();
+
+        public string Category { get; private set; }
 
         private string _fileRelative;
         public string FileRelative
@@ -93,6 +96,7 @@ namespace ODataApiDoc
             var xml = new XmlDocument();
             xml.LoadXml(src);
 
+            ParseCategory(xml);
             ParseLinks(xml);
             ParseCode(xml);
             ParseParameterDoc(xml);
@@ -105,6 +109,13 @@ namespace ODataApiDoc
             text = NormalizeWhitespaces(text);
 
             return text;
+        }
+
+        private void ParseCategory(XmlDocument xml)
+        {
+            var node = xml.DocumentElement.SelectSingleNode("snCategory");
+            node?.ParentNode.RemoveChild(node);
+            Category = node?.InnerText;
         }
 
         private void ParseParameterDoc(XmlDocument xml)
