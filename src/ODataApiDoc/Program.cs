@@ -39,7 +39,7 @@ namespace ODataApiDoc
                 Run(writer, options);
         }
 
-        private static void Run(TextWriter output, Options options)
+        private static void Run(TextWriter mainOutput, Options options)
         {
             var operations = new List<OperationInfo>();
             var input = Path.GetFullPath(options.Input);
@@ -75,13 +75,13 @@ namespace ODataApiDoc
 
             if (options.All)
             {
-                WriteTable(".NET Standard / Core Operations", ops, output, options);
-                WriteTable(".NET Framework Operations", fwOps, output, options);
-                WriteTable("Test Operations", testOps, output, options);
+                WriteTable(".NET Standard / Core Operations", ops, mainOutput, options);
+                WriteTable(".NET Framework Operations", fwOps, mainOutput, options);
+                WriteTable("Test Operations", testOps, mainOutput, options);
             }
             else
             {
-                WriteTable("Operations", ops, output, options);
+                WriteTable("Operations", ops, mainOutput, options);
             }
 
             var writers = new Dictionary<string, TextWriter>();
@@ -91,7 +91,7 @@ namespace ODataApiDoc
                 try
                 {
                     var writer = GetOrCreateWriter(options.Output, GetOutputFile(op), writers);
-                    WriteOperation(op, writer, options);
+                    WriteOperation(op, writer, mainOutput, options);
                 }
                 catch (Exception e)
                 {
@@ -116,7 +116,7 @@ namespace ODataApiDoc
 
             return writer;
         }
-        private static void WriteOperation(OperationInfo op, TextWriter output, Options options)
+        private static void WriteOperation(OperationInfo op, TextWriter output, TextWriter mainWriter, Options options)
         {
             output.WriteLine("## {0}", op.OperationName);
             var head = new List<string>
@@ -134,14 +134,6 @@ namespace ODataApiDoc
             output.Write(string.Join(Environment.NewLine, head));
             output.WriteLine(".");
 
-
-            output.WriteLine("### Parameters:");
-            foreach (var prm in op.Parameters)
-                output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
-                    prm.IsOptional ? " optional" : "", prm.Documentation);
-            if (op.ReturnValue.Type != "void")
-                output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
-                    op.ReturnValue.Documentation);
 
             if (op.Description != null)
             {
@@ -161,6 +153,15 @@ namespace ODataApiDoc
                 output.WriteLine("### Documentation:");
                 output.WriteLine(op.Documentation);
             }
+            output.WriteLine();
+
+            output.WriteLine("### Parameters:");
+            foreach (var prm in op.Parameters)
+                output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
+                    prm.IsOptional ? " optional" : "", prm.Documentation);
+            if (op.ReturnValue.Type != "void")
+                output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
+                    op.ReturnValue.Documentation);
 
             output.WriteLine();
             if (0 < op.ContentTypes.Count + op.AllowedRoles.Count + op.RequiredPermissions.Count +
@@ -175,6 +176,11 @@ namespace ODataApiDoc
             }
 
             output.WriteLine();
+
+            foreach (var parameter in op.Parameters)
+                mainWriter.WriteLine("{0}\t{1}\t{2}\tparam\t{3}", op.Project.Name, op.FileRelative, op.MethodName, parameter.Type);
+            mainWriter.WriteLine("{0}\t{1}\t{2}\treturn\t{3}", op.Project.Name, op.FileRelative, op.MethodName, op.ReturnValue.Type);
+
         }
 
         private static void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options)
