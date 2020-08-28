@@ -119,17 +119,30 @@ namespace ODataApiDoc
         private static void WriteOperation(OperationInfo op, TextWriter output, TextWriter mainWriter, Options options)
         {
             output.WriteLine("## {0}", op.OperationName);
-            var head = new List<string>
+            List<string> head;
+            if (options.All)
             {
-                op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**",
-                $"- Repository: **{op.GithubRepository}**",
-                $"- Project: **{op.ProjectName}**",
-                $"- File: **{op.FileRelative}**",
-                $"- Class: **{op.Namespace}.{op.ClassName}**",
-                $"- Method: **{op.MethodName}**"
-            };
-            if (op.Icon != null)
-                head.Add($"- Icon: **{op.Icon}**");
+                head = new List<string>
+                {
+                    op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**",
+                    $"- Repository: **{op.GithubRepository}**",
+                    $"- Project: **{op.ProjectName}**",
+                    $"- File: **{op.FileRelative}**",
+                    $"- Class: **{op.Namespace}.{op.ClassName}**",
+                    $"- Method: **{op.MethodName}**"
+                };
+                if (op.Icon != null)
+                    head.Add($"- Icon: **{op.Icon}**");
+            }
+            else
+            {
+                head = new List<string>
+                {
+                    op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**"
+                };
+                if (op.Icon != null)
+                    head.Add($"- Icon: **{op.Icon}**");
+            }
 
             output.Write(string.Join(Environment.NewLine, head));
             output.WriteLine(".");
@@ -150,25 +163,67 @@ namespace ODataApiDoc
             }
             else
             {
-                output.WriteLine("### Documentation:");
+                //output.WriteLine("### Documentation:");
                 output.WriteLine(op.Documentation);
             }
             output.WriteLine();
 
-            output.WriteLine("### Parameters:");
-            foreach (var prm in op.Parameters)
-                output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
-                    prm.IsOptional ? " optional" : "", prm.Documentation);
-            if (op.ReturnValue.Type != "void")
-                output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
-                    op.ReturnValue.Documentation);
+            if (options.All)
+            {
+                output.WriteLine("### Parameters:");
+                foreach (var prm in op.Parameters)
+                    output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
+                        prm.IsOptional ? " optional" : "", prm.Documentation);
+                if (op.ReturnValue.Type != "void")
+                    output.WriteLine("- **Return value** ({0}): {1}", op.ReturnValue.Type.FormatType(),
+                        op.ReturnValue.Documentation);
+            }
+            else
+            {
+                output.WriteLine("### Requested resource:");
+                var res = op.Parameters.First();
+
+                output.WriteLine(res.Documentation);
+
+                var onlyRoot = op.ContentTypes.Count == 1 && op.ContentTypes[0] == "N.CT.PortalRoot";
+                if (onlyRoot)
+                {
+                    output.WriteLine("Can only be called on the root content.");
+                }
+                if (!onlyRoot && op.ContentTypes.Count > 0)
+                {
+                    var contentTypes = string.Join(", ", 
+                        op.ContentTypes.Select(x => x.Replace("N.CT.", "")));
+                    if (contentTypes == "GenericContent, ContentType")
+                        output.WriteLine("The `targetContent` can be any content type");
+                    else
+                        output.WriteLine("The `targetContent` can be {0}", contentTypes);
+                }
+
+                var request = onlyRoot
+                    ? $"/odata.svc/('Root')/{op.OperationName}"
+                    : $"/odata.svc/Root/...('targetContent')/{op.OperationName}";
+                output.WriteLine("```");
+                output.WriteLine(request);
+                output.WriteLine("```");
+
+                output.WriteLine("### Parameters:");
+                var prms = op.Parameters.Skip(1).ToArray();
+                if(prms.Length == 0)
+                    output.WriteLine("There are no parameters.");
+                else
+                    foreach (var prm in prms)
+                        output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
+                            prm.IsOptional ? " optional" : "", prm.Documentation);
+            }
 
             output.WriteLine();
             if (0 < op.ContentTypes.Count + op.AllowedRoles.Count + op.RequiredPermissions.Count +
                 op.RequiredPolicies.Count + op.Scenarios.Count)
             {
-                output.WriteLine("### Filters and authorization:");
-                WriteAttribute("ContentTypes", op.ContentTypes, output);
+                output.WriteLine("### Requirements:");
+                if (options.All)
+                    WriteAttribute("ContentTypes", op.ContentTypes, output);
                 WriteAttribute("AllowedRoles", op.AllowedRoles, output);
                 WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
                 WriteAttribute("RequiredPolicies", op.RequiredPolicies, output);
@@ -177,10 +232,10 @@ namespace ODataApiDoc
 
             output.WriteLine();
 
-            foreach (var parameter in op.Parameters)
-                mainWriter.WriteLine("{0}\t{1}\t{2}\tparam\t{3}", op.Project.Name, op.FileRelative, op.MethodName, parameter.Type);
-            mainWriter.WriteLine("{0}\t{1}\t{2}\treturn\t{3}", op.Project.Name, op.FileRelative, op.MethodName, op.ReturnValue.Type);
-
+            //// all existing parameters
+            //foreach (var parameter in op.Parameters)
+            //    mainWriter.WriteLine("{0}\t{1}\t{2}\tparam\t{3}", op.Project.Name, op.FileRelative, op.MethodName, parameter.Type);
+            //mainWriter.WriteLine("{0}\t{1}\t{2}\treturn\t{3}", op.Project.Name, op.FileRelative, op.MethodName, op.ReturnValue.Type);
         }
 
         private static void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options)
@@ -190,9 +245,9 @@ namespace ODataApiDoc
 
             output.WriteLine($"## {title} ({ops.Length})");
 
-            var ordered = ops.OrderBy(o => o.File).ThenBy(o => o.OperationName);
-            if (options.DocsAlert)
+            if (options.All)
             {
+                var ordered = ops.OrderBy(o => o.File).ThenBy(o => o.OperationName);
                 output.WriteLine("| Operation | Doc | Category| Type | Repository | Project | File | Directory |");
                 output.WriteLine("| --------- | --- | --------| ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
@@ -209,18 +264,16 @@ namespace ODataApiDoc
             }
             else
             {
-                output.WriteLine("| Operation | Category | Type | Repository | Project | File | Directory |");
-                output.WriteLine("| --------- | -------- | ---- | ---------- | ------- | ---- | --------- |");
+                var ordered = ops.OrderBy(o => o.Category).ThenBy(o => o.OperationName);
+                output.WriteLine("| Category | Operation | Type |");
+                output.WriteLine("| -------- | --------- | ---- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](./{1}#{2}) | {3} | {4} | {5} | {6} | {7} | {8} |", op.OperationName,
+                    output.WriteLine("| {0} | [{1}](./{2}#{3}) | {4} |",
+                        op.Category ?? "-",
+                        op.OperationName,
                         GetOutputFile(op).ToLowerInvariant(),
                         op.OperationName.ToLowerInvariant(),
-                        op.Category ?? "-",
-                        op.IsAction ? "Action" : "Function",
-                        op.GithubRepository,
-                        op.ProjectName,
-                        Path.GetFileName(op.FileRelative),
-                        Path.GetDirectoryName(op.FileRelative));
+                        op.IsAction ? "Action" : "Function");
             }
 
         }

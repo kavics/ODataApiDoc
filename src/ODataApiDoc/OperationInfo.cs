@@ -261,7 +261,7 @@ namespace ODataApiDoc
                 .Replace("\r\n", "\n")
                 .Replace("\r", "\n")
                 .Split('\n')
-                .Select(x => x.Trim());
+                /*.Select(x => x.Trim())*/;
 
             var result = new List<string>();
             var emptyLines = 0;
