@@ -15,9 +15,10 @@ namespace ODataApiDoc
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length != 3 && args.Length != 4)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir>");
+                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> <frontend|backend> [-all]");
+                return;
             }
 
             var options = new Options
@@ -25,7 +26,8 @@ namespace ODataApiDoc
                 Input = args[0],
                 Output = args[1],
                 ShowAst = false,
-                DocsAlert = false
+                ForBackend = args[2].ToLowerInvariant() == "backend",
+                All = args.Length == 4 && args[3].ToLowerInvariant() == "-all"
             };
 
             var name = $"ODataApi-{DateTime.UtcNow:yyyy-MM-dd}";
@@ -120,7 +122,7 @@ namespace ODataApiDoc
         {
             output.WriteLine("## {0}", op.OperationName);
             List<string> head;
-            if (options.All)
+            if (options.ForBackend)
             {
                 head = new List<string>
                 {
@@ -156,19 +158,13 @@ namespace ODataApiDoc
             }
 
             output.WriteLine();
-            if (string.IsNullOrEmpty(op.Documentation))
+            if (!string.IsNullOrEmpty(op.Documentation))
             {
-                if (options.DocsAlert)
-                    output.WriteLine("MISSING DOCUMENTATION");
-            }
-            else
-            {
-                //output.WriteLine("### Documentation:");
                 output.WriteLine(op.Documentation);
             }
             output.WriteLine();
 
-            if (options.All)
+            if (options.ForBackend)
             {
                 output.WriteLine("### Parameters:");
                 foreach (var prm in op.Parameters)
@@ -222,7 +218,7 @@ namespace ODataApiDoc
                 op.RequiredPolicies.Count + op.Scenarios.Count)
             {
                 output.WriteLine("### Requirements:");
-                if (options.All)
+                if (options.ForBackend)
                     WriteAttribute("ContentTypes", op.ContentTypes, output);
                 WriteAttribute("AllowedRoles", op.AllowedRoles, output);
                 WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
@@ -245,16 +241,16 @@ namespace ODataApiDoc
 
             output.WriteLine($"## {title} ({ops.Length})");
 
-            if (options.All)
+            if (options.ForBackend)
             {
                 var ordered = ops.OrderBy(o => o.File).ThenBy(o => o.OperationName);
-                output.WriteLine("| Operation | Doc | Category| Type | Repository | Project | File | Directory |");
-                output.WriteLine("| --------- | --- | --------| ---- | ---------- | ------- | ---- | --------- |");
+                output.WriteLine("| Operation | Category | Type | Repository | Project | File | Directory |");
+                output.WriteLine("| --------- | -------- | ---- | ---------- | ------- | ---- | --------- |");
                 foreach (var op in ordered)
-                    output.WriteLine("| [{0}](./{1}#{2}) | {3} | {4} | {5} | {6} | {7} | {8} | {9} |", op.OperationName,
+                    output.WriteLine("| [{0}](./{1}#{2}) | {3} | {4} | {5} | {6} | {7} | {8} |",
+                        op.OperationName,
                         GetOutputFile(op).ToLowerInvariant(),
                         op.OperationName.ToLowerInvariant(),
-                        string.IsNullOrEmpty(op.Documentation) ? "" : "ok",
                         op.Category ?? "-",
                         op.IsAction ? "Action" : "Function",
                         op.GithubRepository,

@@ -8,10 +8,7 @@
 
         public bool ShowAst { get; set; }
 
-        /// <summary>
-        /// Gets or sets whether show missing documentation alert and "Doc" column.
-        /// </summary>
-        public bool DocsAlert { get; set; }
+        public bool ForBackend { get; set; }
 
         /// <summary>
         /// Gets or sets whether also show operations from test projects and .NET Framework projects.
