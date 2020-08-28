@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ODataApiDoc": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\dev\\github\\sensenet\\src C:\\Users\\kavics\\Desktop\\ODataApi\\1 backend"
+    }
+  }
+}
