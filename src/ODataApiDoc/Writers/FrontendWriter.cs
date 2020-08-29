@@ -90,6 +90,14 @@ namespace ODataApiDoc.Writers
                     output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
                         prm.IsOptional ? " optional" : "", prm.Documentation);
 
+            if (op.ReturnValue.Type != "void" && !string.IsNullOrEmpty(op.ReturnValue.Documentation))
+            {
+                output.WriteLine();
+                output.WriteLine("### Return value:");
+                output.WriteLine("{1} (Type: {0}).", op.ReturnValue.Type.FormatType(),
+                    op.ReturnValue.Documentation);
+            }
+
             output.WriteLine();
             if (0 < op.ContentTypes.Count + op.AllowedRoles.Count + op.RequiredPermissions.Count +
                 op.RequiredPolicies.Count + op.Scenarios.Count)
