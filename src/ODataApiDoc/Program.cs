@@ -55,13 +55,24 @@ namespace ODataApiDoc
 
 
 mainOutput.WriteLine();
+mainOutput.WriteLine("Bad doc of requested resource:");
+mainOutput.WriteLine("File\tMethodName\tDescription of content param");
+foreach (var op in coreOps)
+{
+    var desc = op.Parameters[0].Documentation;
+    if(!string.IsNullOrEmpty(desc))
+        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, desc);
+}
+
+mainOutput.WriteLine();
 mainOutput.WriteLine("Operation descriptions:");
 mainOutput.WriteLine("Description\tMethodName\tFile");
 foreach (var op in coreOps)
 {
-    if(!string.IsNullOrEmpty(op.Description))
+    if (!string.IsNullOrEmpty(op.Description))
         mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.Description, op.MethodName, op.File);
 }
+
 mainOutput.WriteLine();
 mainOutput.WriteLine("Functions and parameters:");
 mainOutput.WriteLine("File\tMethodName\tParameters");
