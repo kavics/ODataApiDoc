@@ -13,6 +13,6 @@
         /// </summary>
         public bool All { get; set; }
 
-
+        public bool HideDescription = true;
     }
 }

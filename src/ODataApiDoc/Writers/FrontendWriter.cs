@@ -41,9 +41,8 @@ namespace ODataApiDoc.Writers
             output.Write(string.Join(Environment.NewLine, head));
             output.WriteLine(".");
 
-            if (op.Description != null)
+            if (!string.IsNullOrEmpty(op.Description) && !options.HideDescription)
             {
-                output.WriteLine("### Description:");
                 output.WriteLine();
                 output.WriteLine(op.Description);
             }

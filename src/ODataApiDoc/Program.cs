@@ -53,6 +53,16 @@ namespace ODataApiDoc
             mainOutput.WriteLine("Path:       {0}", options.Input);
             mainOutput.WriteLine("Operations: {0}", operations.Count);
 
+
+mainOutput.WriteLine();
+mainOutput.WriteLine("Operation descriptions:");
+mainOutput.WriteLine("Description\tMethodName\tFile");
+foreach (var op in coreOps)
+{
+    if(!string.IsNullOrEmpty(op.Description))
+        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.Description, op.MethodName, op.File);
+}
+
             WriteOutput(operations, coreOps, fwOps, testOps, false, options);
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
         }
