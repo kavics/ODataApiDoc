@@ -33,7 +33,10 @@ namespace ODataApiDoc.Writers
 
             head = new List<string>
             {
-                op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**"
+                //op.IsAction ? "- Type: **ACTION**" : "- Type: **FUNCTION**"
+                op.IsAction 
+                    ? "- Method: **POST**" 
+                    : "- Method: **GET** or optionally POST"
             };
             if (op.Icon != null)
                 head.Add($"- Icon: **{op.Icon}**");
@@ -54,32 +57,7 @@ namespace ODataApiDoc.Writers
             }
             output.WriteLine();
 
-            output.WriteLine("### Requested resource:");
-            var res = op.Parameters.First();
-
-            output.WriteLine(res.Documentation);
-
-            var onlyRoot = op.ContentTypes.Count == 1 && op.ContentTypes[0] == "N.CT.PortalRoot";
-            if (onlyRoot)
-            {
-                output.WriteLine("Can only be called on the root content.");
-            }
-            if (!onlyRoot && op.ContentTypes.Count > 0)
-            {
-                var contentTypes = string.Join(", ",
-                    op.ContentTypes.Select(x => x.Replace("N.CT.", "")));
-                if (contentTypes == "GenericContent, ContentType")
-                    output.WriteLine("The `targetContent` can be any content type");
-                else
-                    output.WriteLine("The `targetContent` can be {0}", contentTypes);
-            }
-
-            var request = onlyRoot
-                ? $"/odata.svc/('Root')/{op.OperationName}"
-                : $"/odata.svc/Root/...('targetContent')/{op.OperationName}";
-            output.WriteLine("```");
-            output.WriteLine(request);
-            output.WriteLine("```");
+            WriteRequestExample(op, output);
 
             output.WriteLine("### Parameters:");
             var prms = op.Parameters.Skip(1).ToArray();
@@ -110,6 +88,40 @@ namespace ODataApiDoc.Writers
             }
 
             output.WriteLine();
+        }
+
+        private void WriteRequestExample(OperationInfo op, TextWriter output)
+        {
+            output.WriteLine("### Request example:");
+            var res = op.Parameters.First();
+
+            output.WriteLine(res.Documentation);
+
+            var onlyRoot = op.ContentTypes.Count == 1 && op.ContentTypes[0] == "N.CT.PortalRoot";
+
+            var httpMethod = op.IsAction ? "POST" : "GET";
+            var request = onlyRoot
+                ? $"{httpMethod} /odata.svc/('Root')/{op.OperationName}"
+                : $"{httpMethod} /odata.svc/Root/...('targetContent')/{op.OperationName}";
+            output.WriteLine("```");
+            output.WriteLine(request);
+            output.WriteLine("```");
+
+            if (onlyRoot)
+            {
+                output.WriteLine("Can only be called on the root content.");
+            }
+
+            if (!onlyRoot && op.ContentTypes.Count > 0)
+            {
+                var contentTypes = string.Join(", ",
+                    op.ContentTypes.Select(x => x.Replace("N.CT.", "")));
+                if (contentTypes == "GenericContent, ContentType")
+                    output.WriteLine("The `targetContent` can be any content type");
+                else
+                    output.WriteLine("The `targetContent` can be {0}", contentTypes);
+            }
+
         }
     }
 }

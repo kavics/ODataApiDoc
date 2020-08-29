@@ -62,6 +62,17 @@ foreach (var op in coreOps)
     if(!string.IsNullOrEmpty(op.Description))
         mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.Description, op.MethodName, op.File);
 }
+mainOutput.WriteLine();
+mainOutput.WriteLine("Functions and parameters:");
+mainOutput.WriteLine("File\tMethodName\tParameters");
+foreach (var op in coreOps)
+{
+    if (!op.IsAction && op.Parameters.Count > 1)
+        mainOutput.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
+            string.Join(", ", op.Parameters.Skip(1).Select(x=> $"{x.Type} {x.Name}")));
+}
+
+
 
             WriteOutput(operations, coreOps, fwOps, testOps, false, options);
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
