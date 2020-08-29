@@ -11,9 +11,9 @@ namespace ODataApiDoc
     {
         static void Main(string[] args)
         {
-            if (args.Length != 3 && args.Length != 4)
+            if (args.Length != 2 && args.Length != 3)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> <frontend|backend> [-all]");
+                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-all]");
                 return;
             }
 
@@ -22,7 +22,7 @@ namespace ODataApiDoc
                 Input = args[0],
                 Output = args[1],
                 ShowAst = false,
-                All = args.Length == 4 && args[3].ToLowerInvariant() == "-all"
+                All = args.Length == 3 && args[2].ToLowerInvariant() == "-all"
             };
 
             if (!Directory.Exists(options.Output))

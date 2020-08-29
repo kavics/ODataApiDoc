@@ -63,7 +63,12 @@ namespace ODataApiDoc.Parser
             var name = node.Identifier.Text;
             if (Operation.Parameters.Count == 0 && !type.EndsWith("Content"))
                 Operation.IsValid = false;
-            Operation.Parameters.Add(new OperationParameterInfo { Name = name, Type = type });
+            Operation.Parameters.Add(new OperationParameterInfo
+            {
+                Name = name,
+                Type = type,
+                IsOptional = node.Default != null
+            });
             base.VisitParameter(node);
         }
 
