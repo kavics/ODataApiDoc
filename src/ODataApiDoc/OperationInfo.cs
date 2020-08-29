@@ -195,6 +195,11 @@ namespace ODataApiDoc
 
         private void ParseParagraphs(XmlDocument xml)
         {
+            // <nodoc>... Remove these nodes
+            foreach (var element in xml.DocumentElement.SelectNodes("//nodoc").OfType<XmlElement>().ToArray())
+            {
+                element.ParentNode.RemoveChild(element);
+            }
             // <para>... Replace with a newline + inner text.
             foreach (var element in xml.DocumentElement.SelectNodes("//para").OfType<XmlElement>().ToArray())
             {
