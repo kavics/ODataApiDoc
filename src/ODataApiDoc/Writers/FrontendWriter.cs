@@ -15,15 +15,15 @@ namespace ODataApiDoc.Writers
             output.WriteLine($"## {title} ({ops.Length})");
 
             var ordered = ops.OrderBy(o => o.Category).ThenBy(o => o.OperationName);
-            output.WriteLine("| Category | Operation | Type |");
-            output.WriteLine("| -------- | --------- | ---- |");
+            output.WriteLine("| Category | Operation | Method |");
+            output.WriteLine("| -------- | --------- | ------ |");
             foreach (var op in ordered)
                 output.WriteLine("| {0} | [{1}](./{2}#{3}) | {4} |",
                     op.Category ?? "-",
                     op.OperationName,
                     GetOutputFile(op).ToLowerInvariant(),
                     op.OperationName.ToLowerInvariant(),
-                    op.IsAction ? "Action" : "Function");
+                    op.IsAction ? "POST" : "GET");
         }
 
         public override void WriteOperation(OperationInfo op, TextWriter output, Options options)
