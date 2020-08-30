@@ -141,6 +141,10 @@ namespace ODataApiDoc
                 if (parameter == null)
                     continue;
 
+                var example = paramElement.Attributes["example"]?.Value;
+                if(example != null)
+                    parameter.Example = example;
+
                 parameter.Documentation = paramElement.InnerXml;
                 xml.DocumentElement.RemoveChild(paramElement);
             }

@@ -99,13 +99,21 @@ namespace ODataApiDoc.Writers
 
             var onlyRoot = op.ContentTypes.Count == 1 && op.ContentTypes[0] == "N.CT.PortalRoot";
 
-            var httpMethod = op.IsAction ? "POST" : "GET";
-            var request = onlyRoot
-                ? $"{httpMethod} /odata.svc/('Root')/{op.OperationName}"
-                : $"{httpMethod} /odata.svc/Root/...('targetContent')/{op.OperationName}";
-            output.WriteLine("```");
-            output.WriteLine(request);
-            output.WriteLine("```");
+            CreateParamExamples(op, out var getExample, out var postExample);
+
+            if (!op.IsAction)
+            {
+                WriteGetExample(op, output, onlyRoot, getExample);
+                if (op.Parameters.Count > 1)
+                {
+                    output.WriteLine("or");
+                    WritePostExample(op, output, onlyRoot, postExample);
+                }
+            }
+            if (op.IsAction)
+            {
+                WritePostExample(op, output, onlyRoot, postExample);
+            }
 
             if (onlyRoot)
             {
@@ -122,6 +130,97 @@ namespace ODataApiDoc.Writers
                     output.WriteLine("The `targetContent` can be {0}", contentTypes);
             }
 
+        }
+
+        private static void WriteGetExample(OperationInfo op, TextWriter output, bool onlyRoot, string getExample)
+        {
+            var request = onlyRoot
+                ? $"GET /odata.svc/('Root')/{op.OperationName}{getExample}"
+                : $"GET /odata.svc/Root/...('targetContent')/{op.OperationName}{getExample}";
+            output.WriteLine("```");
+            output.WriteLine(request);
+            output.WriteLine("```");
+        }
+
+        private static void WritePostExample(OperationInfo op, TextWriter output, bool onlyRoot, string postExample)
+        {
+            var request = onlyRoot
+                ? $"POST /odata.svc/('Root')/{op.OperationName}"
+                : $"POST /odata.svc/Root/...('targetContent')/{op.OperationName}";
+            output.WriteLine("```");
+            output.WriteLine(request);
+            if (postExample != null)
+            {
+                output.WriteLine("DATA:");
+                output.WriteLine(postExample);
+            }
+
+            output.WriteLine("```");
+        }
+
+        private void CreateParamExamples(OperationInfo op, out string getExample, out string postExample)
+        {
+            getExample = null;
+            postExample = null;
+
+            var prms = op.Parameters.Skip(1).ToArray();
+            if (prms.Length > 0 /*&& prms.All(p => !string.IsNullOrEmpty(p.Example))*/)
+            {
+                getExample = $"?" + string.Join("&", prms.Select(GetGetExample));
+                postExample =
+                    "models=[{" + CR +
+                    "  " + string.Join(", " + CR + "  ", prms.Select(GetGetPostExample)) + CR +
+                    "}]";
+            }
+        }
+
+        private string GetGetExample(OperationParameterInfo op)
+        {
+            var type = op.Type;
+            var isArray = type.EndsWith("[]");
+            if (isArray)
+                type = type.Substring(0, type.Length - 2);
+
+            string example;
+            if (type == "string" && isArray)
+            {
+                // ["Task", "Event"] --> prm=Task&prm=Event
+                example = op.Example ?? "[\"_item1_\", \"_item2_\"]";
+
+                var items = example.TrimStart('[').TrimEnd(']').Trim().Split(',')
+                    .Select(x => x.Trim().Trim('"')).ToArray();
+                return string.Join("&", items.Select(x => $"{op.Name}={x}"));
+            }
+
+            example = op.Example ?? $"_value_";
+            return $"{op.Name}={example.Trim('\'', '"')}";
+        }
+
+        private string GetGetPostExample(OperationParameterInfo op)
+        {
+            var type = op.Type;
+            var isArray = type.EndsWith("[]");
+            if (isArray)
+                type = type.Substring(0, type.Length - 2);
+
+
+            var example = op.Example;
+            if (example == null)
+            {
+                if (type == "string")
+                    example = isArray ? $"[\"_item1_\", \"_item2_\"]" : $"\"_value_\"";
+                else
+                    example = isArray ? $"[_item1_, _item2_]" : $"_value_";
+            }
+
+            if (op.Type == "string")
+            {
+                if (!(example.StartsWith('\'') && example.EndsWith('\"') ||
+                      example.StartsWith('\"') && example.EndsWith('\"')))
+                    example = $"\"{example}\"";
+            }
+
+            return $"\"{op.Name}\": {example}";
         }
     }
 }

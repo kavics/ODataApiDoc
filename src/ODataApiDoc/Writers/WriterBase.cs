@@ -6,6 +6,9 @@ namespace ODataApiDoc.Writers
 {
     internal abstract class WriterBase
     {
+        // ReSharper disable once InconsistentNaming
+        protected static readonly string CR = Environment.NewLine;
+
         public abstract void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options);
 
         public abstract void WriteOperation(OperationInfo op, TextWriter output, Options options);
