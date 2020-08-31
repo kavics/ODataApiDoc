@@ -57,6 +57,8 @@ namespace ODataApiDoc.Writers
             }
             output.WriteLine();
 
+            TransformParameters(op);
+
             WriteRequestExample(op, output);
 
             output.WriteLine("### Parameters:");
@@ -88,6 +90,14 @@ namespace ODataApiDoc.Writers
             }
 
             output.WriteLine();
+        }
+
+        private void TransformParameters(OperationInfo op)
+        {
+            foreach (var parameter in op.Parameters)
+            {
+                parameter.Type = GetFrontendType(parameter.Type);
+            }
         }
 
         private void WriteRequestExample(OperationInfo op, TextWriter output)
@@ -169,7 +179,7 @@ namespace ODataApiDoc.Writers
                 getExample = $"?" + string.Join("&", prms.Select(GetGetExample));
                 postExample =
                     "models=[{" + CR +
-                    "  " + string.Join(", " + CR + "  ", prms.Select(GetGetPostExample)) + CR +
+                    "  " + string.Join(", " + CR + "  ", prms.Select(GetPostExample)) + CR +
                     "}]";
             }
         }
@@ -196,7 +206,7 @@ namespace ODataApiDoc.Writers
             return $"{op.Name}={example.Trim('\'', '"')}";
         }
 
-        private string GetGetPostExample(OperationParameterInfo op)
+        private string GetPostExample(OperationParameterInfo op)
         {
             var type = op.Type;
             var isArray = type.EndsWith("[]");
@@ -221,6 +231,16 @@ namespace ODataApiDoc.Writers
             }
 
             return $"\"{op.Name}\": {example}";
+        }
+
+        private string GetFrontendType(string type)
+        {
+            if (type.StartsWith("IEnumerable<"))
+                return type.Substring(12).Replace(">", "") + "[]";
+            if (type.StartsWith("ODataArray<"))
+                return type.Substring(11).Replace(">", "") + "[]";
+
+            return type;
         }
     }
 }
