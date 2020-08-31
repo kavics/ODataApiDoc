@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ODataApiDoc.Writers
 {
@@ -13,10 +14,11 @@ namespace ODataApiDoc.Writers
 
         public abstract void WriteOperation(OperationInfo op, TextWriter output, Options options);
 
-        public virtual void WriteAttribute(string name, List<string> values, TextWriter output)
+        public virtual void WriteAttribute(string name, List<string> values, string prefix, TextWriter output)
         {
             if (values.Count == 0)
                 return;
+            values = values.Select(x => x.Replace(prefix, string.Empty)).ToList();
             output.WriteLine("- **{0}**: {1}", name, string.Join(", ", values));
         }
 

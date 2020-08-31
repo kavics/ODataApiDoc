@@ -81,10 +81,10 @@ namespace ODataApiDoc.Writers
                 op.RequiredPolicies.Count + op.Scenarios.Count)
             {
                 output.WriteLine("### Requirements:");
-                WriteAttribute("AllowedRoles", op.AllowedRoles, output);
-                WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
-                WriteAttribute("RequiredPolicies", op.RequiredPolicies, output);
-                WriteAttribute("Scenarios", op.Scenarios, output);
+                WriteAttribute("AllowedRoles", op.AllowedRoles, "N.R.", output);
+                WriteAttribute("RequiredPermissions", op.RequiredPermissions, "N.P.", output);
+                WriteAttribute("RequiredPolicies", op.RequiredPolicies, "N.Pol.", output);
+                WriteAttribute("Scenarios", op.Scenarios, "N.S.", output);
             }
 
             output.WriteLine();

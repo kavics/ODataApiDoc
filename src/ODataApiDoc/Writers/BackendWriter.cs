@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using SenseNet.ApplicationModel;
 
 namespace ODataApiDoc.Writers
 {
@@ -76,11 +77,11 @@ namespace ODataApiDoc.Writers
                 op.RequiredPolicies.Count + op.Scenarios.Count)
             {
                 output.WriteLine("### Requirements:");
-                WriteAttribute("ContentTypes", op.ContentTypes, output);
-                WriteAttribute("AllowedRoles", op.AllowedRoles, output);
-                WriteAttribute("RequiredPermissions", op.RequiredPermissions, output);
-                WriteAttribute("RequiredPolicies", op.RequiredPolicies, output);
-                WriteAttribute("Scenarios", op.Scenarios, output);
+                WriteAttribute("ContentTypes", op.ContentTypes, "N.CT.", output);
+                WriteAttribute("AllowedRoles", op.AllowedRoles, "N.R.", output);
+                WriteAttribute("RequiredPermissions", op.RequiredPermissions, "N.P.", output);
+                WriteAttribute("RequiredPolicies", op.RequiredPolicies, "N.Pol.", output);
+                WriteAttribute("Scenarios", op.Scenarios, "N.S.", output);
             }
 
             output.WriteLine();
