@@ -30,7 +30,7 @@ namespace ODataApiDoc.Writers
             {
                 try
                 {
-                    var categoryWriter = GetOrCreateWriter(outputDir, GetOutputFile(op), fileWriters);
+                    var categoryWriter = GetOrCreateWriter(outputDir, op.Category ?? "Uncategorized", GetOutputFile(op), fileWriters);
                     WriteOperation(op, categoryWriter, options);
                 }
                 catch// (Exception e)
@@ -48,20 +48,30 @@ namespace ODataApiDoc.Writers
 
         protected string GetOutputFile(OperationInfo op)
         {
-            var name = op.Category ?? "uncategorized";
+            var name = op.Category?.ToLowerInvariant() ?? "uncategorized";
             return name + ".md";
         }
 
-        protected TextWriter GetOrCreateWriter(string outDir, string outFile, Dictionary<string, TextWriter> writers)
+        protected TextWriter GetOrCreateWriter(string outDir, string category, string outFile, Dictionary<string, TextWriter> writers)
         {
             if (!writers.TryGetValue(outFile, out var writer))
             {
                 writer = new StreamWriter(Path.Combine(outDir, outFile), false);
                 writers.Add(outFile, writer);
+                WriteHead(category, writer);
             }
 
             return writer;
         }
 
+        public void WriteHead(string title, TextWriter writer)
+        {
+            writer.WriteLine("---");
+            writer.WriteLine($"title: {title}");
+            writer.WriteLine($"metaTitle: \"sensenet API - {title}\"");
+            writer.WriteLine($"metaDescription: \"{title}\"");
+            writer.WriteLine("---");
+            writer.WriteLine();
+        }
     }
 }

@@ -99,8 +99,9 @@ foreach (var op in coreOps)
 
             var writer = forBackend ? (WriterBase)new BackendWriter() : new FrontendWriter();
 
-            using (var headWriter = new StreamWriter(Path.Combine(outputDir, "ODataApi.md"), false))
+            using (var headWriter = new StreamWriter(Path.Combine(outputDir, "index.md"), false))
             {
+                writer.WriteHead("Api references", headWriter);
                 if (options.All)
                 {
                     writer.WriteTable(".NET Standard / Core Operations", coreOps, headWriter, options);

@@ -7,6 +7,20 @@ namespace ODataApiDoc.Writers
 {
     internal class FrontendWriter : WriterBase
     {
+        private class CategoryComparer : IComparer<string>
+        {
+            public int Compare(string x, string y)
+            {
+                if (x == null && y == null)
+                    return 0;
+                if (x == null)
+                    return 1;
+                if (y == null)
+                    return -1;
+                return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         public override void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options)
         {
             if (!ops.Any())
@@ -14,16 +28,22 @@ namespace ODataApiDoc.Writers
 
             output.WriteLine($"## {title} ({ops.Length})");
 
-            var ordered = ops.OrderBy(o => o.Category).ThenBy(o => o.OperationName);
+            var ordered = ops
+                .OrderBy(o => o.Category, new CategoryComparer())
+                .ThenBy(o => o.OperationName);
             output.WriteLine("| Category | Operation | Method |");
             output.WriteLine("| -------- | --------- | ------ |");
             foreach (var op in ordered)
-                output.WriteLine("| {0} | [{1}](./{2}#{3}) | {4} |",
-                    op.Category ?? "-",
+            {
+                var category = op.Category ?? "Uncategorized";
+                var categoryInLink = category.ToLowerInvariant();
+                output.WriteLine("| [{0}](/restapi/{2}) | [{1}](/restapi/{2}#{3}) | {4} |",
+                    category,
                     op.OperationName,
-                    GetOutputFile(op).ToLowerInvariant(),
+                    categoryInLink,
                     op.OperationName.ToLowerInvariant(),
                     op.IsAction ? "POST" : "GET");
+            }
         }
 
         public override void WriteOperation(OperationInfo op, TextWriter output, Options options)
