@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -142,6 +141,10 @@ namespace ODataApiDoc
                 if (parameter == null)
                     continue;
 
+                var example = paramElement.Attributes["example"]?.Value;
+                if(example != null)
+                    parameter.Example = example;
+
                 parameter.Documentation = paramElement.InnerXml;
                 xml.DocumentElement.RemoveChild(paramElement);
             }
@@ -196,6 +199,11 @@ namespace ODataApiDoc
 
         private void ParseParagraphs(XmlDocument xml)
         {
+            // <nodoc>... Remove these nodes
+            foreach (var element in xml.DocumentElement.SelectNodes("//nodoc").OfType<XmlElement>().ToArray())
+            {
+                element.ParentNode.RemoveChild(element);
+            }
             // <para>... Replace with a newline + inner text.
             foreach (var element in xml.DocumentElement.SelectNodes("//para").OfType<XmlElement>().ToArray())
             {
