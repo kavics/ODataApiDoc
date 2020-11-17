@@ -48,7 +48,7 @@ namespace ODataApiDoc.Writers
 
         protected string GetOutputFile(OperationInfo op)
         {
-            var name = op.Category?.ToLowerInvariant() ?? "uncategorized";
+            var name = op.Category?.ToLowerInvariant().Replace(" ", "") ?? "uncategorized";
             return name + ".md";
         }
 
