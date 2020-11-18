@@ -119,6 +119,17 @@ namespace ODataApiDoc
 
         private void ParseParameterDoc(XmlDocument xml)
         {
+            // <value>text</value> Replace with _text_
+            foreach (var valueElement in xml.DocumentElement.SelectNodes("//value").OfType<XmlElement>().ToArray())
+            {
+                var innerXml = valueElement.InnerXml;
+                if (string.IsNullOrEmpty(innerXml))
+                    continue;
+
+                var text = xml.CreateTextNode($"_{innerXml}_");
+                valueElement.ParentNode.ReplaceChild(text, valueElement);
+            }
+
             // <paramref name=""> Replace with _name_
             foreach (var paramrefElement in xml.DocumentElement.SelectNodes("//paramref").OfType<XmlElement>().ToArray())
             {
