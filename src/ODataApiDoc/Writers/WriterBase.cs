@@ -30,7 +30,7 @@ namespace ODataApiDoc.Writers
             {
                 try
                 {
-                    var categoryWriter = GetOrCreateWriter(outputDir, op.Category ?? "Uncategorized", GetOutputFile(op), fileWriters);
+                    var categoryWriter = GetOrCreateWriter(outputDir, op.Category, GetOutputFile(op), fileWriters);
                     WriteOperation(op, categoryWriter, options);
                 }
                 catch// (Exception e)
@@ -48,8 +48,7 @@ namespace ODataApiDoc.Writers
 
         protected string GetOutputFile(OperationInfo op)
         {
-            var name = op.Category?.ToLowerInvariant().Replace(" ", "") ?? "uncategorized";
-            return name + ".md";
+            return op.CategoryInLink + ".md";
         }
 
         protected TextWriter GetOrCreateWriter(string outDir, string category, string outFile, Dictionary<string, TextWriter> writers)
