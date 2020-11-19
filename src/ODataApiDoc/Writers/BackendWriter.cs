@@ -20,13 +20,11 @@ namespace ODataApiDoc.Writers
             output.WriteLine("| --------- | -------- | ---- | ---------- | ------- | ---- | --------- |");
             foreach (var op in ordered)
             {
-                var category = op.Category ?? "Uncategorized";
-                var categoryInLink = category.ToLowerInvariant().Replace(" ", "");
                 output.WriteLine("| [{0}](/restapi/{1}#{2}) | [{3}](/restapi/{1}) | {4} | {5} | {6} | {7} | {8} |",
                     op.OperationName,
-                    categoryInLink,
+                    op.CategoryInLink,
                     op.OperationName.ToLowerInvariant(),
-                    category,
+                    op.Category,
                     op.IsAction ? "Action" : "Function",
                     op.GithubRepository,
                     op.ProjectName,

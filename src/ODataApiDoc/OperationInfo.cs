@@ -28,6 +28,7 @@ namespace ODataApiDoc
         public OperationParameterInfo ReturnValue { get; } = new OperationParameterInfo();
 
         public string Category { get; private set; }
+        public string CategoryInLink { get; private set; }
 
         private string _fileRelative;
         public string FileRelative
@@ -114,7 +115,15 @@ namespace ODataApiDoc
         {
             var node = xml.DocumentElement.SelectSingleNode("snCategory");
             node?.ParentNode.RemoveChild(node);
-            Category = node?.InnerText;
+            var category = node?.InnerText;
+            if (string.IsNullOrEmpty(category))
+                category = "Uncategorized";
+            Category = category;
+
+            var categoryInLink = Category.Replace(" ", "").ToLowerInvariant();
+            if (categoryInLink.StartsWith("index"))
+                categoryInLink = categoryInLink.Remove(0, 1);
+            CategoryInLink = categoryInLink;
         }
 
         private void ParseParameterDoc(XmlDocument xml)

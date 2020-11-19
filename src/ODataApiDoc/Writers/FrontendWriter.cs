@@ -35,12 +35,10 @@ namespace ODataApiDoc.Writers
             output.WriteLine("| -------- | --------- | ------ |");
             foreach (var op in ordered)
             {
-                var category = op.Category ?? "Uncategorized";
-                var categoryInLink = category.ToLowerInvariant().Replace(" ", "");
                 output.WriteLine("| [{0}](/restapi/{2}) | [{1}](/restapi/{2}#{3}) | {4} |",
-                    category,
+                    op.Category,
                     op.OperationName,
-                    categoryInLink,
+                    op.CategoryInLink,
                     op.OperationName.ToLowerInvariant(),
                     op.IsAction ? "POST" : "GET");
             }
