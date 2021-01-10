@@ -55,16 +55,33 @@ namespace ODataApiDoc
 
 
 mainOutput.WriteLine();
-mainOutput.WriteLine("Bad doc of requested resource:");
+mainOutput.WriteLine("Missing documentation (except the first 'content' parameter):");
+mainOutput.WriteLine("File\tMethodName\tParameter");
+foreach (var op in coreOps)
+{
+    var parameters = new List<string>();
+    if (string.IsNullOrEmpty(op.Documentation))
+        parameters.Add("<summary>");
+    for (var i = 1; i < op.Parameters.Count; i++)
+        if (string.IsNullOrEmpty(op.Parameters[i].Documentation))
+            parameters.Add(op.Parameters[i].Name);
+    if(!op.IsAction && string.IsNullOrEmpty(op.ReturnValue.Documentation))
+        parameters.Add("<returns>");
+    if (parameters.Count > 1)
+        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, string.Join(", ", parameters));
+}
+
+            mainOutput.WriteLine();
+mainOutput.WriteLine("Unnecessary doc of requested resource (content parameter):");
 mainOutput.WriteLine("File\tMethodName\tDescription of content param");
 foreach (var op in coreOps)
 {
     var desc = op.Parameters[0].Documentation;
-    if(!string.IsNullOrEmpty(desc))
+    if (!string.IsNullOrEmpty(desc))
         mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, desc);
 }
 
-mainOutput.WriteLine();
+            mainOutput.WriteLine();
 mainOutput.WriteLine("Operation descriptions:");
 mainOutput.WriteLine("Description\tMethodName\tFile");
 foreach (var op in coreOps)
@@ -83,10 +100,45 @@ foreach (var op in coreOps)
             string.Join(", ", op.Parameters.Skip(1).Select(x=> $"{x.Type} {x.Name}")));
 }
 
+mainOutput.WriteLine();
+mainOutput.WriteLine("Actions and parameters:");
+mainOutput.WriteLine("File\tMethodName\tParameters");
+foreach (var op in coreOps)
+{
+    if (op.IsAction && op.Parameters.Count > 1)
+        mainOutput.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
+            string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
+}
+
+mainOutput.WriteLine();
+mainOutput.WriteLine("ODATA CHEAT SHEET:");
+foreach (var opGroup in coreOps.GroupBy(x=>x.Category).OrderBy(x=>x.Key))
+{
+    mainOutput.WriteLine("  {0}", opGroup.Key);
+    foreach (var op in opGroup.OrderBy(x=>x.OperationName))
+    {
+        //if (op.IsAction && op.Parameters.Count > 1)
+            mainOutput.WriteLine("    {0} {1}({2}) : {3}",
+                op.IsAction ? "POST" : "GET ",
+                op.OperationName,
+                string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")),
+                FormatTypeForCheatSheet(op.ReturnValue.Type));
+    }
+}
 
 
             WriteOutput(operations, coreOps, fwOps, testOps, false, options);
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
+        }
+
+        private static string FormatTypeForCheatSheet(string type)
+        {
+            if (type.StartsWith("Task<"))
+                type = type.Remove(0, "Task<".Length).TrimEnd('>');
+            if (type.StartsWith("IEnumerable<"))
+                type = type.Remove(0, "IEnumerable<".Length).TrimEnd('>') + "[]";
+
+            return type;
         }
 
         private static void WriteOutput(List<OperationInfo> operations,
