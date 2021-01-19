@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -80,7 +81,7 @@ namespace ODataApiDoc.Writers
             WriteRequestExample(op, output);
 
             output.WriteLine("### Parameters:");
-            var prms = op.Parameters.Skip(1).ToArray();
+            var prms = op.Parameters.Skip(1).Where(IsAllowedParameter).ToArray();
             if (prms.Length == 0)
                 output.WriteLine("There are no parameters.");
             else
@@ -108,6 +109,25 @@ namespace ODataApiDoc.Writers
             }
 
             output.WriteLine();
+        }
+
+        private bool IsAllowedParameter(OperationParameterInfo parameter)
+        {
+            if (parameter.Type == "HttpContext")
+                return false;
+            if (parameter.Type == "ODataRequest")
+                return false;
+            if (parameter.Type == "IConfiguration")
+                return false;
+
+            if (parameter.Type == "Microsoft.AspNetCore.Http.HttpContext")
+                return false;
+            if (parameter.Type == "SenseNet.OData.ODataRequest")
+                return false;
+            if (parameter.Type == "Microsoft.Extensions.Configuration.IConfiguration")
+                return false;
+            
+            return true;
         }
 
         private void TransformParameters(OperationInfo op)
