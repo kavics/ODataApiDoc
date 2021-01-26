@@ -11,6 +11,7 @@ namespace ODataApiDoc.Writers
         protected static readonly string CR = Environment.NewLine;
 
         public abstract void WriteTable(string title, OperationInfo[] ops, TextWriter output, Options options);
+        public abstract void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options);
 
         public abstract void WriteOperation(OperationInfo op, TextWriter output, Options options);
 

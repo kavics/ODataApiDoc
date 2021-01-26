@@ -44,6 +44,31 @@ namespace ODataApiDoc.Writers
                     op.IsAction ? "POST" : "GET");
             }
         }
+        public override void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options)
+        {
+            if (!ops.Any())
+                return;
+
+            output.WriteLine($"## {title} ({ops.Length} operations)");
+
+            output.WriteLine();
+            foreach (var opGroup in ops.GroupBy(x => x.Category).OrderBy(x => x.Key))
+            {
+                output.WriteLine("- [{0}](/restapi/{1})", opGroup.Key, opGroup.First().CategoryInLink);
+                foreach (var op in opGroup.OrderBy(x => x.OperationName))
+                {
+                    //if (op.IsAction && op.Parameters.Count > 1)
+                    output.WriteLine("  - {0} [{1}](/restapi/{2}#{3})({4}) : {5}",
+                        op.IsAction ? "POST" : "GET ",
+                        op.OperationName, op.CategoryInLink, op.OperationName.ToLowerInvariant(),
+                        string.Join(", ", op.Parameters
+                            .Skip(1)
+                            .Where(IsAllowedParameter)
+                            .Select(x => $"{x.Type} {x.Name}")),
+                        Program.FormatTypeForCheatSheet(op.ReturnValue.Type));
+                }
+            }
+        }
 
         public override void WriteOperation(OperationInfo op, TextWriter output, Options options)
         {

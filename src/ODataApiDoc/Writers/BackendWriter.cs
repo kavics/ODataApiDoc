@@ -33,6 +33,12 @@ namespace ODataApiDoc.Writers
             }
         }
 
+        public override void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options)
+        {
+            output.WriteLine($"## {title} ({ops.Length})");
+            output.WriteLine($"### ... coming soon.");
+        }
+
         public override void WriteOperation(OperationInfo op, TextWriter output, Options options)
         {
             output.WriteLine("## {0}", op.OperationName);

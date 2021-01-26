@@ -55,8 +55,7 @@ namespace ODataApiDoc
 
 
 mainOutput.WriteLine();
-mainOutput.WriteLine("Missing documentation (except the first 'content' parameter):");
-mainOutput.WriteLine("File\tMethodName\tParameter");
+var issuedItems = new List<(OperationInfo op, List<string> parameters)>();
 foreach (var op in coreOps)
 {
     var parameters = new List<string>();
@@ -68,10 +67,16 @@ foreach (var op in coreOps)
     if(!op.IsAction && string.IsNullOrEmpty(op.ReturnValue.Documentation))
         parameters.Add("<returns>");
     if (parameters.Count > 1)
-        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, string.Join(", ", parameters));
+        issuedItems.Add((op, parameters));
+}
+mainOutput.WriteLine($"Missing documentation (except the first 'content' parameter) (count: {issuedItems.Count}):");
+mainOutput.WriteLine("File\tMethodName\tParameter");
+foreach (var item in issuedItems)
+{
+    mainOutput.WriteLine("'{0}'\t{1}\t{2}", item.op.File, item.op.MethodName, string.Join(", ", item.parameters));
 }
 
-            mainOutput.WriteLine();
+mainOutput.WriteLine();
 mainOutput.WriteLine("Unnecessary doc of requested resource (content parameter):");
 mainOutput.WriteLine("File\tMethodName\tDescription of content param");
 foreach (var op in coreOps)
@@ -131,8 +136,13 @@ foreach (var opGroup in coreOps.GroupBy(x=>x.Category).OrderBy(x=>x.Key))
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
         }
 
-        private static string FormatTypeForCheatSheet(string type)
+        internal static string FormatTypeForCheatSheet(string type)
         {
+            if (type == "STT.Task")
+                return "void";
+
+            if (type.StartsWith("STT.Task<"))
+                type = type.Substring(4);
             if (type.StartsWith("Task<"))
                 type = type.Remove(0, "Task<".Length).TrimEnd('>');
             if (type.StartsWith("IEnumerable<"))
@@ -164,9 +174,22 @@ foreach (var opGroup in coreOps.GroupBy(x=>x.Category).OrderBy(x=>x.Key))
                 {
                     writer.WriteTable("Operations", coreOps, headWriter, options);
                 }
-
-                writer.WriteOperations(options.All ? operations.ToArray() : coreOps, outputDir, options);
             }
+            using (var treeWriter = new StreamWriter(Path.Combine(outputDir, "cheatsheet.md"), false))
+            {
+                writer.WriteHead("Api references", treeWriter);
+                if (options.All)
+                {
+                    writer.WriteTree(".NET Standard / Core Operations", coreOps, treeWriter, options);
+                    writer.WriteTree(".NET Framework Operations", fwOps, treeWriter, options);
+                    writer.WriteTree("Test Operations", testOps, treeWriter, options);
+                }
+                else
+                {
+                    writer.WriteTree("CHEAT SHEET", coreOps, treeWriter, options);
+                }
+            }
+            writer.WriteOperations(options.All ? operations.ToArray() : coreOps, outputDir, options);
         }
     }
 }
