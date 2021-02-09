@@ -11,9 +11,9 @@ namespace ODataApiDoc
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2 && args.Length != 3)
+            if (args.Length != 2 && args.Length != 3 && args.Length != 4)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-all]");
+                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-cat|-op] [-all]");
                 return;
             }
 
@@ -21,18 +21,19 @@ namespace ODataApiDoc
             {
                 Input = args[0],
                 Output = args[1],
+                FileLevel = args.Contains("-op", StringComparer.OrdinalIgnoreCase) ? FileLevel.Operation : FileLevel.Category,
+                All = args.Contains("-all", StringComparer.OrdinalIgnoreCase),
                 ShowAst = false,
-                All = args.Length == 3 && args[2].ToLowerInvariant() == "-all"
             };
 
-            if (!Directory.Exists(options.Output))
-                Directory.CreateDirectory(options.Output);
+            if(Directory.Exists(options.Output))
+                Directory.Delete(options.Output, true);
+            Directory.CreateDirectory(options.Output);
 
-            using (var writer = new StreamWriter(Path.Combine(options.Output, "generation.txt"), false))
-                Run(writer, options);
+            Run(options);
         }
 
-        private static void Run(TextWriter mainOutput, Options options)
+        private static void Run(Options options)
         {
             var fileWriters = new Dictionary<string, TextWriter>();
 
@@ -50,90 +51,97 @@ namespace ODataApiDoc
             var fwOps = operations.Where(o => o.ProjectType == ProjectType.NETFramework || o.ProjectType == ProjectType.Unknown).ToArray();
             var coreOps = operations.Except(testOps).Except(fwOps).ToArray();
 
-            mainOutput.WriteLine("Path:       {0}", options.Input);
-            mainOutput.WriteLine("Operations: {0}", operations.Count);
-
-
-mainOutput.WriteLine();
-var issuedItems = new List<(OperationInfo op, List<string> parameters)>();
-foreach (var op in coreOps)
-{
-    var parameters = new List<string>();
-    if (string.IsNullOrEmpty(op.Documentation))
-        parameters.Add("<summary>");
-    for (var i = 1; i < op.Parameters.Count; i++)
-        if (string.IsNullOrEmpty(op.Parameters[i].Documentation))
-            parameters.Add(op.Parameters[i].Name);
-    if(!op.IsAction && string.IsNullOrEmpty(op.ReturnValue.Documentation))
-        parameters.Add("<returns>");
-    if (parameters.Count > 1)
-        issuedItems.Add((op, parameters));
-}
-mainOutput.WriteLine($"Missing documentation (except the first 'content' parameter) (count: {issuedItems.Count}):");
-mainOutput.WriteLine("File\tMethodName\tParameter");
-foreach (var item in issuedItems)
-{
-    mainOutput.WriteLine("'{0}'\t{1}\t{2}", item.op.File, item.op.MethodName, string.Join(", ", item.parameters));
-}
-
-mainOutput.WriteLine();
-mainOutput.WriteLine("Unnecessary doc of requested resource (content parameter):");
-mainOutput.WriteLine("File\tMethodName\tDescription of content param");
-foreach (var op in coreOps)
-{
-    var desc = op.Parameters[0].Documentation;
-    if (!string.IsNullOrEmpty(desc))
-        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, desc);
-}
-
-            mainOutput.WriteLine();
-mainOutput.WriteLine("Operation descriptions:");
-mainOutput.WriteLine("Description\tMethodName\tFile");
-foreach (var op in coreOps)
-{
-    if (!string.IsNullOrEmpty(op.Description))
-        mainOutput.WriteLine("'{0}'\t{1}\t{2}", op.Description, op.MethodName, op.File);
-}
-
-mainOutput.WriteLine();
-mainOutput.WriteLine("Functions and parameters:");
-mainOutput.WriteLine("File\tMethodName\tParameters");
-foreach (var op in coreOps)
-{
-    if (!op.IsAction && op.Parameters.Count > 1)
-        mainOutput.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
-            string.Join(", ", op.Parameters.Skip(1).Select(x=> $"{x.Type} {x.Name}")));
-}
-
-mainOutput.WriteLine();
-mainOutput.WriteLine("Actions and parameters:");
-mainOutput.WriteLine("File\tMethodName\tParameters");
-foreach (var op in coreOps)
-{
-    if (op.IsAction && op.Parameters.Count > 1)
-        mainOutput.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
-            string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
-}
-
-mainOutput.WriteLine();
-mainOutput.WriteLine("ODATA CHEAT SHEET:");
-foreach (var opGroup in coreOps.GroupBy(x=>x.Category).OrderBy(x=>x.Key))
-{
-    mainOutput.WriteLine("  {0}", opGroup.Key);
-    foreach (var op in opGroup.OrderBy(x=>x.OperationName))
-    {
-        //if (op.IsAction && op.Parameters.Count > 1)
-            mainOutput.WriteLine("    {0} {1}({2}) : {3}",
-                op.IsAction ? "POST" : "GET ",
-                op.OperationName,
-                string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")),
-                FormatTypeForCheatSheet(op.ReturnValue.Type));
-    }
-}
-
+            using (var writer = new StreamWriter(Path.Combine(options.Output, "generation.txt"), false))
+                WriteGenerationInfo(writer, options, operations, coreOps);
 
             WriteOutput(operations, coreOps, fwOps, testOps, false, options);
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
+        }
+
+        private static void WriteGenerationInfo(TextWriter writer, Options options, List<OperationInfo> operations,
+            OperationInfo[] coreOps)
+        {
+            writer.WriteLine("Path:       {0}", options.Input);
+            writer.WriteLine("Operations: {0}", operations.Count);
+
+
+            writer.WriteLine();
+            var issuedItems = new List<(OperationInfo op, List<string> parameters)>();
+            foreach (var op in coreOps)
+            {
+                var parameters = new List<string>();
+                if (string.IsNullOrEmpty(op.Documentation))
+                    parameters.Add("<summary>");
+                for (var i = 1; i < op.Parameters.Count; i++)
+                    if (string.IsNullOrEmpty(op.Parameters[i].Documentation))
+                        parameters.Add(op.Parameters[i].Name);
+                if (!op.IsAction && string.IsNullOrEmpty(op.ReturnValue.Documentation))
+                    parameters.Add("<returns>");
+                if (parameters.Count > 1)
+                    issuedItems.Add((op, parameters));
+            }
+
+            writer.WriteLine($"Missing documentation (except the first 'content' parameter) (count: {issuedItems.Count}):");
+            writer.WriteLine("File\tMethodName\tParameter");
+            foreach (var item in issuedItems)
+            {
+                writer.WriteLine("'{0}'\t{1}\t{2}", item.op.File, item.op.MethodName, string.Join(", ", item.parameters));
+            }
+
+            //writer.WriteLine();
+            //writer.WriteLine("Unnecessary doc of requested resource (content parameter):");
+            //writer.WriteLine("File\tMethodName\tDescription of content param");
+            //foreach (var op in coreOps)
+            //{
+            //    var desc = op.Parameters[0].Documentation;
+            //    if (!string.IsNullOrEmpty(desc))
+            //        writer.WriteLine("'{0}'\t{1}\t{2}", op.File, op.MethodName, desc);
+            //}
+
+            writer.WriteLine();
+            writer.WriteLine("Operation descriptions:");
+            writer.WriteLine("Description\tMethodName\tFile");
+            foreach (var op in coreOps)
+            {
+                if (!string.IsNullOrEmpty(op.Description))
+                    writer.WriteLine("'{0}'\t{1}\t{2}", op.Description, op.MethodName, op.File);
+            }
+
+            writer.WriteLine();
+            writer.WriteLine("Functions and parameters:");
+            writer.WriteLine("File\tMethodName\tParameters");
+            foreach (var op in coreOps)
+            {
+                if (!op.IsAction && op.Parameters.Count > 1)
+                    writer.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
+                        string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
+            }
+
+            writer.WriteLine();
+            writer.WriteLine("Actions and parameters:");
+            writer.WriteLine("File\tMethodName\tParameters");
+            foreach (var op in coreOps)
+            {
+                if (op.IsAction && op.Parameters.Count > 1)
+                    writer.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
+                        string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
+            }
+
+            writer.WriteLine();
+            writer.WriteLine("ODATA CHEAT SHEET:");
+            foreach (var opGroup in coreOps.GroupBy(x => x.Category).OrderBy(x => x.Key))
+            {
+                writer.WriteLine("  {0}", opGroup.Key);
+                foreach (var op in opGroup.OrderBy(x => x.OperationName))
+                {
+                    //if (op.IsAction && op.Parameters.Count > 1)
+                    writer.WriteLine("    {0} {1}({2}) : {3}",
+                        op.IsAction ? "POST" : "GET ",
+                        op.OperationName,
+                        string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")),
+                        FormatTypeForCheatSheet(op.ReturnValue.Type));
+                }
+            }
         }
 
         internal static string FormatTypeForCheatSheet(string type)
