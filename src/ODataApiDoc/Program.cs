@@ -138,25 +138,12 @@ namespace ODataApiDoc
                     writer.WriteLine("    {0} {1}({2}) : {3}",
                         op.IsAction ? "POST" : "GET ",
                         op.OperationName,
-                        string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")),
-                        FormatTypeForCheatSheet(op.ReturnValue.Type));
+                        string.Join(", ", op.Parameters.Skip(1)
+                            .Where(FrontendWriter.IsAllowedParameter)
+                            .Select(x => $"{FrontendWriter.GetFrontendType(x.Type).Replace("`", "")} {x.Name}")),
+                        FrontendWriter.GetFrontendType(op.ReturnValue.Type).Replace("`", ""));
                 }
             }
-        }
-
-        internal static string FormatTypeForCheatSheet(string type)
-        {
-            if (type == "STT.Task")
-                return "void";
-
-            if (type.StartsWith("STT.Task<"))
-                type = type.Substring(4);
-            if (type.StartsWith("Task<"))
-                type = type.Remove(0, "Task<".Length).TrimEnd('>');
-            if (type.StartsWith("IEnumerable<"))
-                type = type.Remove(0, "IEnumerable<".Length).TrimEnd('>') + "[]";
-
-            return type;
         }
 
         private static void WriteOutput(List<OperationInfo> operations,

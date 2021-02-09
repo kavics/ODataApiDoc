@@ -93,8 +93,8 @@ namespace ODataApiDoc.Writers
                         string.Join(", ", op.Parameters
                             .Skip(1)
                             .Where(IsAllowedParameter)
-                            .Select(x => $"{x.Type} {x.Name}")),
-                        Program.FormatTypeForCheatSheet(op.ReturnValue.Type));
+                            .Select(x => $"{GetFrontendType(x.Type)} {x.Name}")),
+                        GetFrontendType(op.ReturnValue.Type));
 
                 }
             }
@@ -141,14 +141,14 @@ namespace ODataApiDoc.Writers
                 output.WriteLine("There are no parameters.");
             else
                 foreach (var prm in prms)
-                    output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type.FormatType(),
+                    output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type,
                         prm.IsOptional ? " optional" : "", prm.Documentation);
 
             if (op.ReturnValue.Type != "void" && !string.IsNullOrEmpty(op.ReturnValue.Documentation))
             {
                 output.WriteLine();
                 output.WriteLine("### Return value:");
-                output.WriteLine("{1} (Type: {0}).", op.ReturnValue.Type.FormatType(),
+                output.WriteLine("{1} (Type: {0}).", GetFrontendType(op.ReturnValue.Type),
                     op.ReturnValue.Documentation);
             }
 
@@ -166,7 +166,7 @@ namespace ODataApiDoc.Writers
             output.WriteLine();
         }
 
-        private bool IsAllowedParameter(OperationParameterInfo parameter)
+        public static bool IsAllowedParameter(OperationParameterInfo parameter)
         {
             if (parameter.Type == "HttpContext")
                 return false;
@@ -326,14 +326,24 @@ namespace ODataApiDoc.Writers
             return $"\"{op.Name}\": {example}";
         }
 
-        private string GetFrontendType(string type)
+        public static string GetFrontendType(string type)
         {
+            if (type == "STT.Task")
+                return "void";
+
+            if (type.StartsWith("STT.Task<"))
+                type = type.Substring(4);
+            if (type.StartsWith("Task<"))
+                type = type.Remove(0, "Task<".Length).TrimEnd('>');
             if (type.StartsWith("IEnumerable<"))
-                return type.Substring(12).Replace(">", "") + "[]";
+                type = type.Remove(0, "IEnumerable<".Length).TrimEnd('>') + "[]";
             if (type.StartsWith("ODataArray<"))
                 return type.Substring(11).Replace(">", "") + "[]";
 
+            //if (type.Contains("<"))
+                return $"`{type}`";
             return type;
         }
+
     }
 }
