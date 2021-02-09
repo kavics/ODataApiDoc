@@ -2,9 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ODataApiDoc.Writers
 {
+    /// <summary>Defines constants for file level</summary>
+    public enum FileLevel
+    {
+        /// <summary>One category per file</summary>
+        Category,
+        /// <summary>One operation per file. Categories are directories.</summary>
+        Operation
+    }
+
     internal abstract class WriterBase
     {
         // ReSharper disable once InconsistentNaming
@@ -31,7 +41,7 @@ namespace ODataApiDoc.Writers
             {
                 try
                 {
-                    var categoryWriter = GetOrCreateWriter(outputDir, op.Category, GetOutputFile(op), fileWriters);
+                    var categoryWriter = GetOrCreateWriter(outputDir, op, fileWriters, options);
                     WriteOperation(op, categoryWriter, options);
                 }
                 catch// (Exception e)
@@ -47,21 +57,36 @@ namespace ODataApiDoc.Writers
             }
         }
 
-        protected string GetOutputFile(OperationInfo op)
-        {
-            return op.CategoryInLink + ".md";
-        }
 
-        protected TextWriter GetOrCreateWriter(string outDir, string category, string outFile, Dictionary<string, TextWriter> writers)
+        protected TextWriter GetOrCreateWriter(string outDir, OperationInfo op, Dictionary<string, TextWriter> writers, Options options)
         {
+            var outFile = GetOutputFile(op, options);
             if (!writers.TryGetValue(outFile, out var writer))
             {
+                if (options.FileLevel == FileLevel.Operation)
+                {
+                    var categoryPath = Path.Combine(outDir, op.CategoryInLink);
+                    if (!Directory.Exists(categoryPath))
+                        Directory.CreateDirectory(categoryPath);
+                }
                 writer = new StreamWriter(Path.Combine(outDir, outFile), false);
                 writers.Add(outFile, writer);
-                WriteHead(category, writer);
+                WriteHead(op.Category, writer);
             }
 
             return writer;
+        }
+        protected string GetOutputFile(OperationInfo op, Options options)
+        {
+            switch (options.FileLevel)
+            {
+                case FileLevel.Category:
+                    return $"{op.CategoryInLink}.md";
+                case FileLevel.Operation:
+                    return $"{op.CategoryInLink}\\{op.OperationNameInLink}.md";
+                default:
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+            }
         }
 
         public void WriteHead(string title, TextWriter writer)
@@ -72,6 +97,11 @@ namespace ODataApiDoc.Writers
             writer.WriteLine($"metaDescription: \"{title}\"");
             writer.WriteLine("---");
             writer.WriteLine();
+        }
+
+        protected Exception GetNotSupportedFileLevelException(FileLevel fileLevel)
+        {
+            return new NotSupportedException($"FileLevel.{fileLevel} is not supported.");
         }
     }
 }

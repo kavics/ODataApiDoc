@@ -36,12 +36,28 @@ namespace ODataApiDoc.Writers
             output.WriteLine("| -------- | --------- | ------ |");
             foreach (var op in ordered)
             {
-                output.WriteLine("| [{0}](/restapi/{2}) | [{1}](/restapi/{2}#{3}) | {4} |",
-                    op.Category,
-                    op.OperationName,
-                    op.CategoryInLink,
-                    op.OperationName.ToLowerInvariant(),
-                    op.IsAction ? "POST" : "GET");
+                if (options.FileLevel == FileLevel.Category)
+                {
+                    output.WriteLine("| [{0}](/restapi/{2}) | [{1}](/restapi/{2}#{3}) | {4} |",
+                        op.Category,
+                        op.OperationName,
+                        op.CategoryInLink,
+                        op.OperationNameInLink,
+                        op.IsAction ? "POST" : "GET");
+                }
+                else if(options.FileLevel == FileLevel.Operation)
+                {
+                    output.WriteLine("| {0} | [{1}](/restapi/{2}/{3}) | {4} |",
+                        op.Category,
+                        op.OperationName,
+                        op.CategoryInLink,
+                        op.OperationNameInLink,
+                        op.IsAction ? "POST" : "GET");
+                }
+                else
+                {
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+                }
             }
         }
         public override void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options)
@@ -54,18 +70,32 @@ namespace ODataApiDoc.Writers
             output.WriteLine();
             foreach (var opGroup in ops.GroupBy(x => x.Category).OrderBy(x => x.Key))
             {
-                output.WriteLine("- [{0}](/restapi/{1})", opGroup.Key, opGroup.First().CategoryInLink);
+                if (options.FileLevel == FileLevel.Category)
+                    output.WriteLine("- [{0}](/restapi/{1})", opGroup.Key, opGroup.First().CategoryInLink);
+                else if (options.FileLevel == FileLevel.Operation)
+                    output.WriteLine("- {0}", opGroup.Key);
+                else
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+
                 foreach (var op in opGroup.OrderBy(x => x.OperationName))
                 {
-                    //if (op.IsAction && op.Parameters.Count > 1)
-                    output.WriteLine("  - {0} [{1}](/restapi/{2}#{3})({4}) : {5}",
+                    char separator;
+                    if (options.FileLevel == FileLevel.Category)
+                        separator = '#';
+                    else if (options.FileLevel == FileLevel.Operation)
+                        separator = '/';
+                    else
+                        throw GetNotSupportedFileLevelException(options.FileLevel);
+
+                    output.WriteLine("  - {0} [{1}](/restapi/{2}{3}{4})({5}) : {6}",
                         op.IsAction ? "POST" : "GET ",
-                        op.OperationName, op.CategoryInLink, op.OperationName.ToLowerInvariant(),
+                        op.OperationName, op.CategoryInLink, separator, op.OperationNameInLink,
                         string.Join(", ", op.Parameters
                             .Skip(1)
                             .Where(IsAllowedParameter)
                             .Select(x => $"{x.Type} {x.Name}")),
                         Program.FormatTypeForCheatSheet(op.ReturnValue.Type));
+
                 }
             }
         }

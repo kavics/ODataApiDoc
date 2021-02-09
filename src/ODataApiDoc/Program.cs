@@ -11,9 +11,9 @@ namespace ODataApiDoc
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2 && args.Length != 3)
+            if (args.Length != 2 && args.Length != 3 && args.Length != 4)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-all]");
+                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-cat|-op] [-all]");
                 return;
             }
 
@@ -21,12 +21,14 @@ namespace ODataApiDoc
             {
                 Input = args[0],
                 Output = args[1],
+                FileLevel = args.Contains("-op", StringComparer.OrdinalIgnoreCase) ? FileLevel.Operation : FileLevel.Category,
+                All = args.Contains("-all", StringComparer.OrdinalIgnoreCase),
                 ShowAst = false,
-                All = args.Length == 3 && args[2].ToLowerInvariant() == "-all"
             };
 
-            if (!Directory.Exists(options.Output))
-                Directory.CreateDirectory(options.Output);
+            if(Directory.Exists(options.Output))
+                Directory.Delete(options.Output, true);
+            Directory.CreateDirectory(options.Output);
 
             Run(options);
         }

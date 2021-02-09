@@ -16,6 +16,7 @@ namespace ODataApiDoc
         public ProjectInfo Project { get; set; }
         public string MethodName { get; set; }
         public string OperationName { get; set; }
+        public string OperationNameInLink => OperationName.ToLowerInvariant();
         public string Description { get; set; }
         public string Icon { get; set; }
         public string Documentation { get; set; }
