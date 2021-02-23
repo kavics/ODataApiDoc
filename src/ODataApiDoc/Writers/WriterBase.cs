@@ -12,7 +12,9 @@ namespace ODataApiDoc.Writers
         /// <summary>One category per file</summary>
         Category,
         /// <summary>One operation per file. Categories are directories.</summary>
-        Operation
+        Operation,
+        /// <summary>One operation per file. Everything is in one directory.</summary>
+        OperationNoCategories
     }
 
     internal abstract class WriterBase
@@ -84,6 +86,8 @@ namespace ODataApiDoc.Writers
                     return $"{op.CategoryInLink}.md";
                 case FileLevel.Operation:
                     return $"{op.CategoryInLink}\\{op.OperationNameInLink}.md";
+                case FileLevel.OperationNoCategories:
+                    return $"{op.OperationNameInLink}.md";
                 default:
                     throw GetNotSupportedFileLevelException(options.FileLevel);
             }

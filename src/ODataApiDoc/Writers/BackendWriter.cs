@@ -46,6 +46,19 @@ namespace ODataApiDoc.Writers
                         Path.GetFileName(op.FileRelative),
                         Path.GetDirectoryName(op.FileRelative));
                 }
+                else if (options.FileLevel == FileLevel.OperationNoCategories)
+                {
+                    output.WriteLine("| [{0}](/restapi/{2}) | {3} | {4} | {5} | {6} | {7} | {8} |",
+                        op.OperationName,
+                        op.CategoryInLink,
+                        op.OperationNameInLink,
+                        op.Category,
+                        op.IsAction ? "Action" : "Function",
+                        op.GithubRepository,
+                        op.ProjectName,
+                        Path.GetFileName(op.FileRelative),
+                        Path.GetDirectoryName(op.FileRelative));
+                }
                 else
                 {
                     throw GetNotSupportedFileLevelException(options.FileLevel);

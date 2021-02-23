@@ -13,7 +13,7 @@ namespace ODataApiDoc
         {
             if (args.Length != 2 && args.Length != 3 && args.Length != 4)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-cat|-op] [-all]");
+                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-cat|-op|-flat] [-all]");
                 return;
             }
 
@@ -21,7 +21,11 @@ namespace ODataApiDoc
             {
                 Input = args[0],
                 Output = args[1],
-                FileLevel = args.Contains("-op", StringComparer.OrdinalIgnoreCase) ? FileLevel.Operation : FileLevel.Category,
+                FileLevel = args.Contains("-op", StringComparer.OrdinalIgnoreCase)
+                    ? FileLevel.Operation
+                    : args.Contains("-flat", StringComparer.OrdinalIgnoreCase)
+                        ? FileLevel.OperationNoCategories
+                        : FileLevel.Category,
                 All = args.Contains("-all", StringComparer.OrdinalIgnoreCase),
                 ShowAst = false,
             };
@@ -51,11 +55,29 @@ namespace ODataApiDoc
             var fwOps = operations.Where(o => o.ProjectType == ProjectType.NETFramework || o.ProjectType == ProjectType.Unknown).ToArray();
             var coreOps = operations.Except(testOps).Except(fwOps).ToArray();
 
+            SetOperationLinks(options.All ? (IEnumerable<OperationInfo>)operations : coreOps);
+
             using (var writer = new StreamWriter(Path.Combine(options.Output, "generation.txt"), false))
                 WriteGenerationInfo(writer, options, operations, coreOps);
 
             WriteOutput(operations, coreOps, fwOps, testOps, false, options);
             WriteOutput(operations, coreOps, fwOps, testOps, true, options);
+        }
+
+        private static void SetOperationLinks(IEnumerable<OperationInfo> operations)
+        {
+            var ops = new Dictionary<string, OperationInfo>();
+            foreach (var op in operations)
+            {
+                var nameBase = op.OperationName.ToLowerInvariant();
+                var index = 1;
+                var name = nameBase;
+                while (ops.ContainsKey(name))
+                    name = nameBase + ++index;
+
+                ops.Add(name, op);
+                op.OperationNameInLink = name;
+            }
         }
 
         private static void WriteGenerationInfo(TextWriter writer, Options options, List<OperationInfo> operations,

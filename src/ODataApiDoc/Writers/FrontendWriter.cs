@@ -54,6 +54,15 @@ namespace ODataApiDoc.Writers
                         op.OperationNameInLink,
                         op.IsAction ? "POST" : "GET");
                 }
+                else if (options.FileLevel == FileLevel.OperationNoCategories)
+                {
+                    output.WriteLine("| {0} | [{1}](/restapi/{3}) | {4} |",
+                        op.Category,
+                        op.OperationName,
+                        op.CategoryInLink,
+                        op.OperationNameInLink,
+                        op.IsAction ? "POST" : "GET");
+                }
                 else
                 {
                     throw GetNotSupportedFileLevelException(options.FileLevel);
@@ -72,24 +81,26 @@ namespace ODataApiDoc.Writers
             {
                 if (options.FileLevel == FileLevel.Category)
                     output.WriteLine("- [{0}](/restapi/{1})", opGroup.Key, opGroup.First().CategoryInLink);
-                else if (options.FileLevel == FileLevel.Operation)
+                else if (options.FileLevel == FileLevel.Operation || options.FileLevel == FileLevel.OperationNoCategories)
                     output.WriteLine("- {0}", opGroup.Key);
                 else
                     throw GetNotSupportedFileLevelException(options.FileLevel);
 
                 foreach (var op in opGroup.OrderBy(x => x.OperationName))
                 {
-                    char separator;
+                    string relativeLink;
                     if (options.FileLevel == FileLevel.Category)
-                        separator = '#';
+                        relativeLink = $"{op.CategoryInLink}#{op.OperationNameInLink}";
                     else if (options.FileLevel == FileLevel.Operation)
-                        separator = '/';
+                        relativeLink = $"{op.CategoryInLink}/{op.OperationNameInLink}";
+                    else if (options.FileLevel == FileLevel.OperationNoCategories)
+                        relativeLink = op.OperationNameInLink;
                     else
                         throw GetNotSupportedFileLevelException(options.FileLevel);
 
-                    output.WriteLine("  - {0} [{1}](/restapi/{2}{3}{4})({5}) : {6}",
+                    output.WriteLine("  - {0} [{1}](/restapi/{2})({3}) : {4}",
                         op.IsAction ? "POST" : "GET ",
-                        op.OperationName, op.CategoryInLink, separator, op.OperationNameInLink,
+                        op.OperationName, relativeLink,
                         string.Join(", ", op.Parameters
                             .Skip(1)
                             .Where(IsAllowedParameter)
