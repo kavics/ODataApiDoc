@@ -73,7 +73,10 @@ namespace ODataApiDoc.Writers
                 }
                 writer = new StreamWriter(Path.Combine(outDir, outFile), false);
                 writers.Add(outFile, writer);
-                WriteHead(op.Category, writer);
+                if(options.FileLevel == FileLevel.OperationNoCategories)
+                    WriteHead(op.OperationName, writer);
+                else
+                    WriteHead(op.Category, writer);
             }
 
             return writer;
