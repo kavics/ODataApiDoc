@@ -1,5 +1,8 @@
-﻿namespace ODataApiDoc
+﻿using System.Diagnostics;
+
+namespace ODataApiDoc
 {
+    [DebuggerDisplay("{Type} {Name}")]
     public class OperationParameterInfo
     {
         public string Type { get; set; }

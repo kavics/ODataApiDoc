@@ -198,9 +198,18 @@ namespace ODataApiDoc.Writers
 
         private void TransformParameters(OperationInfo op)
         {
+            var parametersToDelete = new List<OperationParameterInfo>();
             foreach (var parameter in op.Parameters)
             {
-                parameter.Type = GetFrontendType(parameter.Type);
+                if (FrontendWriter.IsAllowedParameter(parameter))
+                    parameter.Type = GetFrontendType(parameter.Type);
+                else
+                    parametersToDelete.Add(parameter);
+            }
+
+            foreach (var parameter in parametersToDelete)
+            {
+                op.Parameters.Remove(parameter);
             }
         }
 
