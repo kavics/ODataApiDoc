@@ -31,5 +31,18 @@ namespace ODataApiDoc.Parser
             Value = node.ToString();
             //base.VisitMemberAccessExpression(node);
         }
+
+        public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            var src = node.ToString();
+            if (src.StartsWith("nameof(") && src.EndsWith(")"))
+            {
+                Value = src.Substring(7, src.Length - 8);
+            }
+            else
+            {
+                base.VisitInvocationExpression(node);
+            }
+        }
     }
 }
