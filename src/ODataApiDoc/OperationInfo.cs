@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -17,6 +16,7 @@ namespace ODataApiDoc
         public ProjectInfo Project { get; set; }
         public string MethodName { get; set; }
         public string OperationName { get; set; }
+        public string OperationNameInLink { get; set; }
         public string Description { get; set; }
         public string Icon { get; set; }
         public string Documentation { get; set; }
@@ -29,6 +29,7 @@ namespace ODataApiDoc
         public OperationParameterInfo ReturnValue { get; } = new OperationParameterInfo();
 
         public string Category { get; private set; }
+        public string CategoryInLink { get; private set; }
 
         private string _fileRelative;
         public string FileRelative
@@ -115,11 +116,30 @@ namespace ODataApiDoc
         {
             var node = xml.DocumentElement.SelectSingleNode("snCategory");
             node?.ParentNode.RemoveChild(node);
-            Category = node?.InnerText;
+            var category = node?.InnerText;
+            if (string.IsNullOrEmpty(category))
+                category = "Uncategorized";
+            Category = category;
+
+            var categoryInLink = Category.Replace(" ", "").ToLowerInvariant();
+            if (categoryInLink.StartsWith("index"))
+                categoryInLink = categoryInLink.Remove(0, 1);
+            CategoryInLink = categoryInLink;
         }
 
         private void ParseParameterDoc(XmlDocument xml)
         {
+            // <value>text</value> Replace with _text_
+            foreach (var valueElement in xml.DocumentElement.SelectNodes("//value").OfType<XmlElement>().ToArray())
+            {
+                var innerXml = valueElement.InnerXml;
+                if (string.IsNullOrEmpty(innerXml))
+                    continue;
+
+                var text = xml.CreateTextNode($"_{innerXml}_");
+                valueElement.ParentNode.ReplaceChild(text, valueElement);
+            }
+
             // <paramref name=""> Replace with _name_
             foreach (var paramrefElement in xml.DocumentElement.SelectNodes("//paramref").OfType<XmlElement>().ToArray())
             {
@@ -141,6 +161,10 @@ namespace ODataApiDoc
                 var parameter = Parameters.FirstOrDefault(x => x.Name == name);
                 if (parameter == null)
                     continue;
+
+                var example = paramElement.Attributes["example"]?.Value;
+                if(example != null)
+                    parameter.Example = example;
 
                 parameter.Documentation = paramElement.InnerXml;
                 xml.DocumentElement.RemoveChild(paramElement);
@@ -196,6 +220,11 @@ namespace ODataApiDoc
 
         private void ParseParagraphs(XmlDocument xml)
         {
+            // <nodoc>... Remove these nodes
+            foreach (var element in xml.DocumentElement.SelectNodes("//nodoc").OfType<XmlElement>().ToArray())
+            {
+                element.ParentNode.RemoveChild(element);
+            }
             // <para>... Replace with a newline + inner text.
             foreach (var element in xml.DocumentElement.SelectNodes("//para").OfType<XmlElement>().ToArray())
             {
