@@ -59,6 +59,9 @@ namespace ODataApiDoc.Parser
             if (parent is LambdaExpressionSyntax)
                 return;
 
+            if (node.Type == null)
+                return;
+
             var type = node.Type.GetText().ToString().Trim();
             var name = node.Identifier.Text;
             if (Operation.Parameters.Count == 0 && !type.EndsWith("Content"))

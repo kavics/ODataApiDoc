@@ -43,6 +43,8 @@ namespace ODataApiDoc.Parser
         {
             if (path.EndsWith("\\obj", StringComparison.OrdinalIgnoreCase))
                 return;
+            if (path.EndsWith("\\lut", StringComparison.OrdinalIgnoreCase))
+                return;
 
             var projectPath = Directory.GetFiles(path, "*.csproj").FirstOrDefault();
             if (projectPath != null)
