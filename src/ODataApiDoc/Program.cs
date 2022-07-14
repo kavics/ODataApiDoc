@@ -134,7 +134,7 @@ namespace ODataApiDoc
             writer.WriteLine("File\tMethodName\tParameters");
             foreach (var op in coreOps)
             {
-                if (!op.IsAction && op.Parameters.Count > 1)
+                if (!op.IsAction)
                     writer.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
                         string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
             }
@@ -144,7 +144,7 @@ namespace ODataApiDoc
             writer.WriteLine("File\tMethodName\tParameters");
             foreach (var op in coreOps)
             {
-                if (op.IsAction && op.Parameters.Count > 1)
+                if (op.IsAction)
                     writer.WriteLine("{0}\t{1}\t{2}", op.File, op.MethodName,
                         string.Join(", ", op.Parameters.Skip(1).Select(x => $"{x.Type} {x.Name}")));
             }
