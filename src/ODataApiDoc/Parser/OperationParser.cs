@@ -45,6 +45,10 @@ namespace ODataApiDoc.Parser
                 return;
             if (path.EndsWith("\\lut", StringComparison.OrdinalIgnoreCase))
                 return;
+            if (path.EndsWith("\\.git", StringComparison.OrdinalIgnoreCase))
+                return;
+            if (path.EndsWith("\\.vs", StringComparison.OrdinalIgnoreCase))
+                return;
 
             var projectPath = Directory.GetFiles(path, "*.csproj").FirstOrDefault();
             if (projectPath != null)
