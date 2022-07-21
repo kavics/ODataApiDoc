@@ -62,6 +62,9 @@ namespace ODataApiDoc.Parser
             if (node.Type == null)
                 return;
 
+            if (parent.Parent is LocalFunctionStatementSyntax)
+                return;
+
             var type = node.Type.GetText().ToString().Trim();
             var name = node.Identifier.Text;
             if (Operation.Parameters.Count == 0 && !type.EndsWith("Content"))
