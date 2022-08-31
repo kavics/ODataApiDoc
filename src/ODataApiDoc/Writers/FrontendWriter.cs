@@ -155,12 +155,18 @@ namespace ODataApiDoc.Writers
                     output.WriteLine("- **{0}** ({1}){2}: {3}", prm.Name, prm.Type,
                         prm.IsOptional ? " optional" : "", prm.Documentation);
 
-            if (op.ReturnValue.Type != "void" && !string.IsNullOrEmpty(op.ReturnValue.Documentation))
+            var frontendType = GetFrontendType(op.ReturnValue.Type);
+            if (frontendType != "`void`" || !string.IsNullOrEmpty(op.ReturnValue.Documentation))
             {
                 output.WriteLine();
                 output.WriteLine("### Return value:");
-                output.WriteLine("{1} (Type: {0}).", GetFrontendType(op.ReturnValue.Type),
-                    op.ReturnValue.Documentation);
+                if(frontendType == "`void`")
+                    output.WriteLine(op.ReturnValue.Documentation);
+                else if (string.IsNullOrEmpty(op.ReturnValue.Documentation))
+                    output.WriteLine("Type: {0}.", frontendType);
+                else
+                    output.WriteLine("{1} (Type: {0}).", frontendType,
+                        op.ReturnValue.Documentation);
             }
 
             output.WriteLine();
@@ -348,8 +354,10 @@ namespace ODataApiDoc.Writers
 
         public static string GetFrontendType(string type)
         {
+            if (type == "System.Threading.Tasks.Task")
+                return "`void`";
             if (type == "STT.Task")
-                return "void";
+                return "`void`";
 
             if (type.StartsWith("STT.Task<"))
                 type = type.Substring(4);
