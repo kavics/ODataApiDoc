@@ -91,6 +91,15 @@ namespace ODataApiDoc.Parser
                 return typeName;
             }
 
+            targetFwLine = src.FirstOrDefault(x => x.StartsWith("<TargetFrameworks>"));
+            if (targetFwLine != null)
+            {
+                var typeName = targetFwLine
+                    .Replace("</TargetFrameworks>", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("<TargetFrameworks>", "", StringComparison.OrdinalIgnoreCase);
+                return typeName;
+            }
+
             var targetFwVersionLine = src.FirstOrDefault(x => x.StartsWith("<TargetFrameworkVersion>"));
             if (targetFwVersionLine != null)
             {
