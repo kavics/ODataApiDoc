@@ -2,8 +2,9 @@
   "profiles": {
     "ODataApiDoc": {
       "commandName": "Project",
-      //"commandLineArgs": "D:\\dev\\github\\sensenet\\src C:\\Users\\kavics\\Desktop\\ODataApi\\1 -flat",
-      "commandLineArgs": "D:\\dev\\tfs\\snaas-services\\src C:\\Users\\kavics\\Desktop\\ODataApi\\2 -flat"
+      //"commandLineArgs": "D:\\dev\\github\\sensenet\\src\\Services.Core\\Authentication C:\\Users\\kavics\\Desktop\\ODataApi\\2023-03-01\\sn -flat",
+      "commandLineArgs": "D:\\dev\\github\\sensenet\\src C:\\Users\\kavics\\Desktop\\ODataApi\\2023-03-01\\sn -flat"
+      //"commandLineArgs": "D:\\dev\\tfs\\snaas-services\\src C:\\Users\\kavics\\Desktop\\ODataApi\\2022-08-31\\snaas -flat"
     }
   }
 }

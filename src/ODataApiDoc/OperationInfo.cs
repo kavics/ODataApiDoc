@@ -77,6 +77,8 @@ namespace ODataApiDoc
 
             Description = Description?.Trim('"').Trim();
 
+            //Documentation = new DocumentationParser(parameters: Parameters, returnValue: ReturnValue)
+            //    .Parse(Documentation);
             Documentation = ParseDocumentation(Documentation);
         }
 

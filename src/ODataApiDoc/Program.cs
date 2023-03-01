@@ -42,7 +42,9 @@ namespace ODataApiDoc
             var fileWriters = new Dictionary<string, TextWriter>();
 
             var parser = new OperationParser(options);
-            var operations = parser.Parse();
+            var parserResult =  parser.Parse();
+            var operations = parserResult.Operations;
+            var optionsClasses = parserResult.OptionsClasses;
 
             Console.WriteLine(" ".PadRight(Console.BufferWidth - 1));
 

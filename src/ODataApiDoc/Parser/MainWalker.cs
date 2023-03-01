@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ODataApiDoc.Parser
 {
     /// <summary>
-    /// Searches ODataAction or ODataFunction attributes and visits their methods
+    /// Searches ODataAction or ODataFunction attributes and visits their methods in a csharp file.
     /// </summary>
     internal class MainWalker : WalkerBase
     {
         public List<OperationInfo> Operations { get; } = new List<OperationInfo>();
+        public OptionsClassInfo OptionsClass { get; private set; }
 
         private readonly string _path;
 
@@ -22,7 +25,15 @@ namespace ODataApiDoc.Parser
         public override void VisitAttribute(AttributeSyntax node)
         {
             var name = node.Name.ToString();
-            if (name == "ODataFunction" || name == "ODataAction")
+            if (name == "OptionsClass")
+            {
+                if (node.Parent?.Parent is ClassDeclarationSyntax classNode)
+                {
+                    OptionsClass = new OptionsClassParser().Parse(classNode);
+                    OptionsClass?.Normalize();
+                }
+            }
+            else if (name == "ODataFunction" || name == "ODataAction")
             {
                 // MethodDeclarationSyntax -> AttributeListSyntax -> AttributeSyntax
                 var walker = new ODataOperationWalker(this.ShowAst);

@@ -15,9 +15,11 @@ namespace ODataApiDoc.Parser
             _options = options;
         }
 
-        public List<OperationInfo> Parse()
+        public (List<OperationInfo> Operations, List<OptionsClassInfo> OptionsClasses) Parse()
         {
             var operations = new List<OperationInfo>();
+            var optionsClasses = new List<OptionsClassInfo>();
+
             var input = Path.GetFullPath(_options.Input);
             //string rootPath;
             if (File.Exists(input))
@@ -25,21 +27,21 @@ namespace ODataApiDoc.Parser
                 if (Path.GetExtension(input) != ".cs")
                     throw new NotSupportedException("Only csharp file (*.cs extension) is supported.");
                 //rootPath = Path.GetDirectoryName(input);
-                AddOperationsFromFile(input, input, operations, null, _options.ShowAst);
+                AddOperationsFromFile(input, input, operations, optionsClasses, null, _options.ShowAst);
             }
             else
             {
                 if (!Directory.Exists(input))
                     throw new ArgumentException("Unknown file or directory: " + input);
                 //rootPath = input.TrimEnd('\\', '/');
-                AddOperationsFromDirectory(input, input, operations, null, _options.ShowAst);
+                AddOperationsFromDirectory(input, input, operations, optionsClasses, null, _options.ShowAst);
             }
 
-            return operations;
+            return (operations, optionsClasses);
         }
 
         private void AddOperationsFromDirectory(string root, string path, List<OperationInfo> operations,
-            ProjectInfo currentProject, bool showAst)
+            List<OptionsClassInfo> optionsClasses, ProjectInfo currentProject, bool showAst)
         {
             if (path.EndsWith("\\obj", StringComparison.OrdinalIgnoreCase))
                 return;
@@ -55,9 +57,9 @@ namespace ODataApiDoc.Parser
                 currentProject = CreateProject(projectPath);
 
             foreach (var directory in Directory.GetDirectories(path))
-                AddOperationsFromDirectory(root, directory, operations, currentProject, showAst);
+                AddOperationsFromDirectory(root, directory, operations, optionsClasses, currentProject, showAst);
             foreach (var file in Directory.GetFiles(path, "*.cs"))
-                AddOperationsFromFile(root, file, operations, currentProject, showAst);
+                AddOperationsFromFile(root, file, operations, optionsClasses, currentProject, showAst);
         }
 
         private ProjectInfo CreateProject(string projectPath)
@@ -125,7 +127,7 @@ namespace ODataApiDoc.Parser
         }
 
         private void AddOperationsFromFile(string root, string path, List<OperationInfo> operations,
-            ProjectInfo currentProject, bool showAst)
+            List<OptionsClassInfo> optionsClasses, ProjectInfo currentProject, bool showAst)
         {
             if (path.Length > root.Length)
             {
@@ -140,12 +142,15 @@ namespace ODataApiDoc.Parser
 
             foreach (var op in walker.Operations)
                 op.Project = currentProject;
-
             operations.AddRange(walker.Operations);
-
             if (walker.Operations.Count > 0)
-            {
                 Console.WriteLine("{0}: {1}", path, walker.Operations.Count);
+
+            if (walker.OptionsClass != null)
+            {
+                walker.OptionsClass.Project = currentProject;
+                optionsClasses.Add(walker.OptionsClass);
+                Console.WriteLine("{0}: Options class", path);
             }
         }
 
