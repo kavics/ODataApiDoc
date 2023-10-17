@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ODataApiDoc.Writers
@@ -26,6 +27,7 @@ namespace ODataApiDoc.Writers
         public abstract void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options);
 
         public abstract void WriteOperation(OperationInfo op, TextWriter output, Options options);
+        public abstract void WriteOptionClass(OptionsClassInfo op, TextWriter output, Options options);
 
         public virtual void WriteAttribute(string name, List<string> values, string prefix, TextWriter output)
         {
@@ -39,7 +41,7 @@ namespace ODataApiDoc.Writers
         {
             var fileWriters = new Dictionary<string, TextWriter>();
 
-            foreach (var op in (operations))
+            foreach (var op in operations)
             {
                 try
                 {
@@ -58,8 +60,6 @@ namespace ODataApiDoc.Writers
                 fileWriter.Close();
             }
         }
-
-
         protected TextWriter GetOrCreateWriter(string outDir, OperationInfo op, Dictionary<string, TextWriter> writers, Options options)
         {
             var outFile = GetOutputFile(op, options);
@@ -95,6 +95,67 @@ namespace ODataApiDoc.Writers
                     throw GetNotSupportedFileLevelException(options.FileLevel);
             }
         }
+
+        public void WriteOptionClasses(IEnumerable<OptionsClassInfo> optionClasses, string outputDir, Options options)
+        {
+            var fileWriters = new Dictionary<string, TextWriter>();
+
+            foreach (var oc in optionClasses)
+            {
+                try
+                {
+                    var categoryWriter = GetOrCreateWriter(outputDir, oc, fileWriters, options);
+                    WriteOptionClass(oc, categoryWriter, options);
+                }
+                catch// (Exception e)
+                {
+                    //UNDONE: handle errors
+                }
+            }
+
+            foreach (var fileWriter in fileWriters.Values)
+            {
+                fileWriter.Flush();
+                fileWriter.Close();
+            }
+        }
+        protected TextWriter GetOrCreateWriter(string outDir, OptionsClassInfo oc, Dictionary<string, TextWriter> writers, Options options)
+        {
+            var outFile = GetOutputFile(oc, options);
+            if (!writers.TryGetValue(outFile, out var writer))
+            {
+                if (options.FileLevel == FileLevel.Operation)
+                {
+                    var categoryPath = Path.Combine(outDir, oc.CategoryInLink);
+                    if (!Directory.Exists(categoryPath))
+                        Directory.CreateDirectory(categoryPath);
+                }
+                writer = new StreamWriter(Path.Combine(outDir, outFile), false);
+                writers.Add(outFile, writer);
+                if(options.FileLevel == FileLevel.OperationNoCategories)
+                    WriteHead(oc.ClassName, writer);
+                else
+                    WriteHead(oc.Category, writer);
+            }
+
+            return writer;
+        }
+        protected string GetOutputFile(OptionsClassInfo oc, Options options)
+        {
+            switch (options.FileLevel)
+            {
+                case FileLevel.Category:
+                    return $"{oc.CategoryInLink}.md";
+                case FileLevel.Operation:
+                    return $"{oc.CategoryInLink}\\{oc.ClassNameInLink}.md";
+                case FileLevel.OperationNoCategories:
+                    return $"{oc.ClassNameInLink}.md";
+                default:
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+            }
+        }
+
+
 
         public void WriteHead(string title, TextWriter writer)
         {

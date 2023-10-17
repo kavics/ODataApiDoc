@@ -60,10 +60,10 @@ namespace ODataApiDoc
             SetOperationLinks(options.All ? (IEnumerable<OperationInfo>)operations : coreOps);
 
             using (var writer = new StreamWriter(Path.Combine(options.Output, "generation.txt"), false))
-                WriteGenerationInfo(writer, options, operations, coreOps);
+                WriteGenerationInfo(writer, options, operations, coreOps, optionsClasses);
 
-            WriteOutput(operations, coreOps, fwOps, testOps, false, options);
-            WriteOutput(operations, coreOps, fwOps, testOps, true, options);
+            WriteOutput(operations, coreOps, fwOps, testOps, optionsClasses, false, options);
+            WriteOutput(operations, coreOps, fwOps, testOps, optionsClasses, true, options);
         }
 
         private static void SetOperationLinks(IEnumerable<OperationInfo> operations)
@@ -82,15 +82,15 @@ namespace ODataApiDoc
             }
         }
 
-        private static void WriteGenerationInfo(TextWriter writer, Options options, List<OperationInfo> operations,
-            OperationInfo[] coreOps)
+        private static void WriteGenerationInfo(TextWriter writer, Options options,
+            List<OperationInfo> operations, OperationInfo[] coreOps, List<OptionsClassInfo> optionClasses)
         {
-            writer.WriteLine("Path:       {0}", options.Input);
-            writer.WriteLine("Operations: {0}", operations.Count);
+            writer.WriteLine("Path:            {0}", options.Input);
+            writer.WriteLine("Operations:      {0}", operations.Count);
+            writer.WriteLine("Options classes: {0}", optionClasses.Count);
 
 
-            writer.WriteLine();
-            var issuedItems = new List<(OperationInfo op, List<string> parameters)>();
+            var issuedOperations = new List<(OperationInfo op, List<string> parameters)>();
             foreach (var op in coreOps)
             {
                 var parameters = new List<string>();
@@ -102,14 +102,35 @@ namespace ODataApiDoc
                 if (!op.IsAction && string.IsNullOrEmpty(op.ReturnValue.Documentation))
                     parameters.Add("<returns>");
                 if (parameters.Count > 1)
-                    issuedItems.Add((op, parameters));
+                    issuedOperations.Add((op, parameters));
+            }
+            var issuedOptionsClasses = new List<(OptionsClassInfo op, List<string> properties)>();
+            foreach (var oc in optionClasses)
+            {
+                var properties = new List<string>();
+                if (string.IsNullOrEmpty(oc.Documentation))
+                    properties.Add("<class summary>");
+                foreach (var property in oc.Properties)
+                    if (string.IsNullOrEmpty(property.Documentation))
+                        properties.Add(property.Name);
+                if (properties.Count > 0)
+                    issuedOptionsClasses.Add((oc, properties));
             }
 
-            writer.WriteLine($"Missing documentation (except the first 'content' parameter) (count: {issuedItems.Count}):");
+            writer.WriteLine();
+            writer.WriteLine($"Missing documentation of operations (except the first 'content' parameter) (count: {issuedOperations.Count}):");
             writer.WriteLine("File\tMethodName\tParameter");
-            foreach (var item in issuedItems)
+            foreach (var item in issuedOperations)
             {
                 writer.WriteLine("'{0}'\t{1}\t{2}", item.op.File, item.op.MethodName, string.Join(", ", item.parameters));
+            }
+
+            writer.WriteLine();
+            writer.WriteLine($"Missing documentation of options classes (count: {issuedOptionsClasses.Count}):");
+            writer.WriteLine("File\tClassName\tProperty");
+            foreach (var item in issuedOptionsClasses)
+            {
+                writer.WriteLine("'{0}'\t{1}\t{2}", item.op.File, item.op.ClassName, string.Join(", ", item.properties));
             }
 
             //writer.WriteLine();
@@ -152,6 +173,15 @@ namespace ODataApiDoc
             }
 
             writer.WriteLine();
+            writer.WriteLine("Options classes and properties:");
+            writer.WriteLine("File\tClassName\tProperties");
+            foreach (var oc in optionClasses)
+            {
+                writer.WriteLine("{0}\t{1}\t{2}", oc.File, oc.ClassName,
+                    string.Join(", ", oc.Properties.Select(x => $"{x.Type} {x.Name}")));
+            }
+
+            writer.WriteLine();
             writer.WriteLine("ODATA CHEAT SHEET:");
             foreach (var opGroup in coreOps.GroupBy(x => x.Category).OrderBy(x => x.Key))
             {
@@ -168,10 +198,26 @@ namespace ODataApiDoc
                         FrontendWriter.GetFrontendType(op.ReturnValue.Type).Replace("`", ""));
                 }
             }
+            
+            writer.WriteLine();
+            writer.WriteLine("OPTION CLASSES CHEAT SHEET:");
+            foreach (var optionsClass in optionClasses)
+            {
+                writer.WriteLine("  {0}", optionsClass.ClassName);
+                foreach (var property in optionsClass.Properties/*.OrderBy(x => x.Name)*/)
+                {
+                    writer.WriteLine("    {0} {1} {{{2} }} {3}",
+                        property.Type,
+                        property.Name,
+                        $"{(property.HasGetter ? " get;" : "")}{(property.HasSetter ? " set;" : "")}",
+                        property.Initializer ?? "");
+                }
+            }
         }
 
         private static void WriteOutput(List<OperationInfo> operations,
             OperationInfo[] coreOps, OperationInfo[] fwOps, OperationInfo[] testOps,
+            List<OptionsClassInfo> optionClasses,
             bool forBackend, Options options)
         {
             var outputDir = Path.Combine(options.Output, forBackend ? "backend" : "frontend");
@@ -209,6 +255,7 @@ namespace ODataApiDoc
                 }
             }
             writer.WriteOperations(options.All ? operations.ToArray() : coreOps, outputDir, options);
+            writer.WriteOptionClasses(optionClasses, outputDir, options);
         }
     }
 }

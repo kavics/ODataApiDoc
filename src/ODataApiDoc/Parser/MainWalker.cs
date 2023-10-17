@@ -13,7 +13,7 @@ namespace ODataApiDoc.Parser
     internal class MainWalker : WalkerBase
     {
         public List<OperationInfo> Operations { get; } = new List<OperationInfo>();
-        public OptionsClassInfo OptionsClass { get; private set; }
+        public List<OptionsClassInfo> OptionsClasses { get; } = new List<OptionsClassInfo>();
 
         private readonly string _path;
 
@@ -29,8 +29,18 @@ namespace ODataApiDoc.Parser
             {
                 if (node.Parent?.Parent is ClassDeclarationSyntax classNode)
                 {
-                    OptionsClass = new OptionsClassParser().Parse(classNode);
-                    OptionsClass?.Normalize();
+                    var optionsClass = new OptionsClassParser().Parse(classNode, node);
+                    if (optionsClass != null)
+                    {
+                        optionsClass.File = _path;
+
+                        GetNamespaceAndClassName(node, out var @namespace, out var className);
+                        optionsClass.Namespace = @namespace;
+                        optionsClass.ClassName = className;
+
+                        optionsClass.Normalize();
+                        OptionsClasses.Add(optionsClass);
+                    }
                 }
             }
             else if (name == "ODataFunction" || name == "ODataAction")

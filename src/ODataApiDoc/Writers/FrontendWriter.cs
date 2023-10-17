@@ -183,6 +183,11 @@ namespace ODataApiDoc.Writers
             output.WriteLine();
         }
 
+        public override void WriteOptionClass(OptionsClassInfo op, TextWriter output, Options options)
+        {
+            throw new NotImplementedException();
+        }
+
         public static bool IsAllowedParameter(OperationParameterInfo parameter)
         {
             if (parameter.Type == "HttpContext")

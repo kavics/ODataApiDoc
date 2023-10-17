@@ -146,11 +146,16 @@ namespace ODataApiDoc.Parser
             if (walker.Operations.Count > 0)
                 Console.WriteLine("{0}: {1}", path, walker.Operations.Count);
 
-            if (walker.OptionsClass != null)
+            if (walker.OptionsClasses.Count > 0)
             {
-                walker.OptionsClass.Project = currentProject;
-                optionsClasses.Add(walker.OptionsClass);
-                Console.WriteLine("{0}: Options class", path);
+                foreach (var optionsClass in walker.OptionsClasses)
+                {
+                    optionsClass.Project = currentProject;
+                    optionsClasses.Add(optionsClass);
+                }
+
+                if (walker.OptionsClasses.Count > 0)
+                    Console.WriteLine("{0}: OPTIONS CLASSES: {1}", path, walker.OptionsClasses.Count);
             }
         }
 

@@ -6,17 +6,21 @@ namespace ODataApiDoc.Parser
 {
     internal class OptionsClassParser
     {
-        public OptionsClassInfo Parse(ClassDeclarationSyntax classNode)
+        public OptionsClassInfo Parse(ClassDeclarationSyntax classNode, AttributeSyntax attribute)
         {
             // Only public classes
             if (classNode.Modifiers.All(x => x.Text != "public"))
                 return null;
 
+            ParseAttributeArguments(attribute.ArgumentList);
+
             var result = new OptionsClassInfo
             {
                 Name = classNode.Identifier.Text,
-                Documentation = classNode.GetLeadingTrivia().ToFullString()
+                Documentation = classNode.GetLeadingTrivia().ToFullString(),
+                ConfigSection = ParseAttributeArguments(attribute.ArgumentList)
             };
+
             bool hasCtor = false;
             bool hasParameterlessCtor = false;
 
@@ -68,5 +72,17 @@ namespace ODataApiDoc.Parser
 
             return result;
         }
+
+        public string ParseAttributeArguments(AttributeArgumentListSyntax node)
+        {
+            foreach (var attrArg in node.Arguments)
+            {
+                var visitor = new AttributeArgumentWalker(false);
+                visitor.Visit(attrArg);
+                return visitor.Value.Trim('"');
+            }
+            return null;
+        }
+
     }
 }

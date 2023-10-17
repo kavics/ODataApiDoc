@@ -127,5 +127,43 @@ namespace ODataApiDoc.Writers
 
             output.WriteLine();
         }
+
+        public override void WriteOptionClass(OptionsClassInfo oc, TextWriter output, Options options)
+        {
+            output.WriteLine("## {0}", oc.ClassName);
+            List<string> head;
+
+            head = new List<string>
+            {
+                $"- Repository: **{oc.GithubRepository}**",
+                $"- Project: **{oc.ProjectName}**",
+                $"- File: **{oc.FileRelative}**",
+                $"- Class: **{oc.Namespace}.{oc.ClassName}**",
+                $"- Section: **{oc.ConfigSection}**",
+            };
+
+            output.Write(string.Join(Environment.NewLine, head));
+            output.WriteLine(".");
+
+            output.WriteLine();
+            if (!string.IsNullOrEmpty(oc.Documentation))
+            {
+                output.WriteLine(oc.Documentation);
+            }
+
+            output.WriteLine();
+
+            output.WriteLine("### Properties:");
+            foreach (var prop in oc.Properties)
+            {
+                var defaultValue = prop.Initializer == null
+                    ? ""
+                    : $"Default value: **{prop.Initializer.Replace("=", "").Trim()}**";
+                output.WriteLine("- **{0}** ({1}): {2}. {3}", prop.Name, prop.Type.FormatType(),
+                    prop.Documentation.Trim('.'), defaultValue);
+            }
+
+            output.WriteLine();
+        }
     }
 }
