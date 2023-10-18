@@ -21,16 +21,17 @@ namespace ODataApiDoc
             {
                 Input = args[0],
                 Output = args[1],
-                FileLevel = args.Contains("-op", StringComparer.OrdinalIgnoreCase)
-                    ? FileLevel.Operation
-                    : args.Contains("-flat", StringComparer.OrdinalIgnoreCase)
-                        ? FileLevel.OperationNoCategories
-                        : FileLevel.Category,
                 All = args.Contains("-all", StringComparer.OrdinalIgnoreCase),
                 ShowAst = false,
             };
+            if (args.Contains("-op", StringComparer.OrdinalIgnoreCase))
+                options.FileLevel = FileLevel.Operation;
+            else if (args.Contains("-cat", StringComparer.OrdinalIgnoreCase))
+                options.FileLevel = FileLevel.Category;
+            else if (args.Contains("-flat", StringComparer.OrdinalIgnoreCase))
+                options.FileLevel = FileLevel.OperationNoCategories;
 
-            if(Directory.Exists(options.Output))
+            if (Directory.Exists(options.Output))
                 Directory.Delete(options.Output, true);
             Directory.CreateDirectory(options.Output);
 

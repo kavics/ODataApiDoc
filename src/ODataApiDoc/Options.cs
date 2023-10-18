@@ -15,7 +15,7 @@ namespace ODataApiDoc
         /// </summary>
         public bool All { get; set; }
 
-        public FileLevel FileLevel { get; set; }
+        public FileLevel FileLevel { get; set; } = FileLevel.OperationNoCategories;
 
         public bool HideDescription = true;
     }
