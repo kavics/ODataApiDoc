@@ -224,9 +224,17 @@ namespace ODataApiDoc
             if (!Directory.Exists(outputDir))
                 Directory.CreateDirectory(outputDir);
 
+            var operationsOutputDir = Path.Combine(outputDir, "ODataOperations");
+            if (!Directory.Exists(operationsOutputDir))
+                Directory.CreateDirectory(operationsOutputDir);
+
+            var optionClassesOutputDir = Path.Combine(outputDir, "OptionClasses");
+            if (!Directory.Exists(optionClassesOutputDir))
+                Directory.CreateDirectory(optionClassesOutputDir);
+
             var writer = forBackend ? (WriterBase)new BackendWriter() : new FrontendWriter();
 
-            using (var headWriter = new StreamWriter(Path.Combine(outputDir, "index.md"), false))
+            using (var headWriter = new StreamWriter(Path.Combine(operationsOutputDir, "index.md"), false))
             {
                 writer.WriteHead("Api references", headWriter);
                 if (options.All)
@@ -240,7 +248,7 @@ namespace ODataApiDoc
                     writer.WriteTable("Operations", coreOps, headWriter, options);
                 }
             }
-            using (var treeWriter = new StreamWriter(Path.Combine(outputDir, "cheatsheet.md"), false))
+            using (var treeWriter = new StreamWriter(Path.Combine(operationsOutputDir, "cheatsheet.md"), false))
             {
                 writer.WriteHead("Api references", treeWriter);
                 if (options.All)
@@ -254,8 +262,9 @@ namespace ODataApiDoc
                     writer.WriteTree("CHEAT SHEET", coreOps, treeWriter, options);
                 }
             }
-            writer.WriteOperations(options.All ? operations.ToArray() : coreOps, outputDir, options);
-            writer.WriteOptionClasses(optionClasses, outputDir, options);
+            writer.WriteOperations(options.All ? operations.ToArray() : coreOps, operationsOutputDir, options);
+
+            writer.WriteOptionClasses(optionClasses, optionClassesOutputDir, options);
         }
     }
 }
