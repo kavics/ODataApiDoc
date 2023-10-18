@@ -12,8 +12,6 @@ namespace ODataApiDoc.Parser
             if (classNode.Modifiers.All(x => x.Text != "public"))
                 return null;
 
-            ParseAttributeArguments(attribute.ArgumentList);
-
             var result = new OptionsClassInfo
             {
                 Name = classNode.Identifier.Text,

@@ -183,9 +183,60 @@ namespace ODataApiDoc.Writers
             output.WriteLine();
         }
 
-        public override void WriteOptionClass(OptionsClassInfo op, TextWriter output, Options options)
+        public override void WriteOptionClass(OptionsClassInfo oc, TextWriter output, Options options)
         {
-            throw new NotImplementedException();
+            output.WriteLine("## {0}", oc.ClassName);
+
+            output.WriteLine();
+            if (!string.IsNullOrEmpty(oc.Documentation))
+            {
+                output.WriteLine(oc.Documentation);
+            }
+            output.WriteLine();
+
+            WriteOptionsExample(oc, output);
+
+            output.WriteLine("### Properties:");
+                foreach (var prop in oc.Properties)
+                    output.WriteLine("- **{0}** ({1}): {2}", prop.Name, prop.Type, prop.Documentation);
+
+            output.WriteLine();
+        }
+        private void WriteOptionsExample(OptionsClassInfo oc, TextWriter output)
+        {
+            output.WriteLine("### Configuration example:");
+            output.WriteLine("```");
+            output.WriteLine("{");
+            WriteSection(oc.ConfigSection.Split(':'), 0, "  ", oc.Properties, output);
+            output.WriteLine("}");
+            output.WriteLine("```");
+        }
+        void WriteSection(string[] sections, int sectionIndex, string indent, List<OptionsPropertyInfo> properties, TextWriter output)
+        {
+            if (sectionIndex >= sections.Length)
+            {
+                WriteProperties(indent, properties, output);
+                return;
+            }
+            output.WriteLine($"{indent}\"{sections[sectionIndex]}\": {{");
+            WriteSection(sections, sectionIndex + 1, indent + "  ", properties, output);
+            output.WriteLine($"{indent}}}");
+        }
+        void WriteProperties(string indent, List<OptionsPropertyInfo> properties, TextWriter output)
+        {
+            var index = 0;
+            foreach (var property in properties)
+            {
+                var type = GetFrontendType(property.Type);
+                output.WriteLine(
+                    $"{indent}\"{property.Name}\": {GetPropertyExample(property)}{(index++ < properties.Count - 1 ? "," : "")}");
+            }
+        }
+        private string GetPropertyExample(OptionsPropertyInfo property)
+        {
+            if(property.Type == "string")
+                return "\"_value_\"";
+            return "_value_";
         }
 
         public static bool IsAllowedParameter(OperationParameterInfo parameter)
