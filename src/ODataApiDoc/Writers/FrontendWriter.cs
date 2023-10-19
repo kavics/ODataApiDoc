@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ODataApiDoc.Writers
+namespace SnDocumentGenerator.Writers
 {
     internal class FrontendWriter : WriterBase
     {

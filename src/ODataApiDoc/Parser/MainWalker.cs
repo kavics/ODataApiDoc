@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ODataApiDoc.Parser
+namespace SnDocumentGenerator.Parser
 {
     /// <summary>
     /// Searches ODataAction or ODataFunction attributes and visits their methods in a csharp file.

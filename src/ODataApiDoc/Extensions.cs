@@ -1,4 +1,4 @@
-﻿namespace ODataApiDoc
+﻿namespace SnDocumentGenerator
 {
     public static class Extensions
     {

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace ODataApiDoc.Parser
+namespace SnDocumentGenerator.Parser
 {
     internal class OperationParser
     {

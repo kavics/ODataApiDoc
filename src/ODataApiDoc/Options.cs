@@ -1,6 +1,6 @@
-﻿using ODataApiDoc.Writers;
+﻿using SnDocumentGenerator.Writers;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     internal class Options
     {

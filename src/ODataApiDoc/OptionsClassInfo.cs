@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     public class OptionsClassInfo
     {

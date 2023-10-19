@@ -4,7 +4,7 @@
 //using System.Text;
 //using System.Xml;
 
-//namespace ODataApiDoc
+//namespace SnDocumentGenerator
 //{
 //    internal class DocumentationParser
 //    {

@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ODataApiDoc", "ODataApiDoc\ODataApiDoc.csproj", "{77A9B1CE-CA37-4893-9FDA-A1A1CE81F9C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SnDocumentGenerator", "ODataApiDoc\SnDocumentGenerator.csproj", "{77A9B1CE-CA37-4893-9FDA-A1A1CE81F9C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -5,7 +5,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ODataApiDoc.Writers
+namespace SnDocumentGenerator.Writers
 {
     /// <summary>Defines constants for file level</summary>
     public enum FileLevel

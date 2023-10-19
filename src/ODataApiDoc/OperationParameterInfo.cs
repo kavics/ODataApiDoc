@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     [DebuggerDisplay("{Type} {Name}")]
     public class OperationParameterInfo

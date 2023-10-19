@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     public enum ProjectType { Unknown, NETStandard, NETCore, NETFramework }
 

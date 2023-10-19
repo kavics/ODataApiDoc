@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ODataApiDoc.Parser
+namespace SnDocumentGenerator.Parser
 {
     internal class OptionsClassParser
     {

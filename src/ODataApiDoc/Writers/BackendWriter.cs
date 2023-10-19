@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using SenseNet.ApplicationModel;
 
-namespace ODataApiDoc.Writers
+namespace SnDocumentGenerator.Writers
 {
     internal class BackendWriter : WriterBase
     {

@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace ODataApiDoc.Parser
+namespace SnDocumentGenerator.Parser
 {
     internal class WalkerBase : CSharpSyntaxWalker
     {

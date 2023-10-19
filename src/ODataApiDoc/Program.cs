@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ODataApiDoc.Parser;
-using ODataApiDoc.Writers;
+using SnDocumentGenerator.Parser;
+using SnDocumentGenerator.Writers;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     class Program
     {
@@ -13,7 +13,7 @@ namespace ODataApiDoc
         {
             if (args.Length != 2 && args.Length != 3 && args.Length != 4)
             {
-                Console.WriteLine("Usage: ODataApiDoc <InputDir> <OutputDir> [-cat|-op|-flat] [-all]");
+                Console.WriteLine("Usage: SnDocumentGenerator <InputDir> <OutputDir> [-cat|-op|-flat] [-all]");
                 return;
             }
 

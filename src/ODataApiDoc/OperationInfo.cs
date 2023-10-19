@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 
-namespace ODataApiDoc
+namespace SnDocumentGenerator
 {
     public class OperationInfo
     {
@@ -61,7 +61,7 @@ namespace ODataApiDoc
         }
 
         public string ProjectName => Project?.Name ?? "";
-        public ProjectType ProjectType => Project?.Type ?? ODataApiDoc.ProjectType.Unknown;
+        public ProjectType ProjectType => Project?.Type ?? SnDocumentGenerator.ProjectType.Unknown;
 
         private string CR = Environment.NewLine;
 

@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ODataApiDoc.Parser
+namespace SnDocumentGenerator.Parser
 {
     /// <summary>
     /// Visits one argument of an attribute
