@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ODataApiDoc.Writers
 {
@@ -69,6 +72,54 @@ namespace ODataApiDoc.Writers
                 }
             }
         }
+        public override void WriteTable(string title, OptionsClassInfo[] ocs, TextWriter output, Options options)
+        {
+            if (!ocs.Any())
+                return;
+
+            output.WriteLine($"## {title} ({ocs.Length} sections)");
+
+            var ordered = ocs
+                .OrderBy(o => o.Category, new CategoryComparer())
+                .ThenBy(o => o.ClassName);
+            output.WriteLine("| Category | ClassName | Section |");
+            output.WriteLine("| -------- | --------- | ------- |");
+            foreach (var op in ordered)
+            {
+                if (options.FileLevel == FileLevel.Category)
+                {
+                    output.WriteLine("| [{0}](/options/{2}) | [{1}](/options/{2}#{3}) | {4} |",
+                        op.Category,
+                        op.ClassName,
+                        op.CategoryInLink,
+                        op.ClassNameInLink,
+                        op.ConfigSection);
+                }
+                else if (options.FileLevel == FileLevel.Operation)
+                {
+                    output.WriteLine("| {0} | [{1}](/options/{2}/{3}) | {4} |",
+                        op.Category,
+                        op.ClassName,
+                        op.CategoryInLink,
+                        op.ClassNameInLink,
+                        op.ConfigSection);
+                }
+                else if (options.FileLevel == FileLevel.OperationNoCategories)
+                {
+                    output.WriteLine("| {0} | [{1}](/options/{3}) | {4} |",
+                        op.Category,
+                        op.ClassName,
+                        op.CategoryInLink,
+                        op.ClassNameInLink,
+                        op.ConfigSection);
+                }
+                else
+                {
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+                }
+            }
+        }
+
         public override void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options)
         {
             if (!ops.Any())
@@ -109,6 +160,60 @@ namespace ODataApiDoc.Writers
 
                 }
             }
+        }
+        public override void WriteTree(string title, OptionsClassInfo[] ocs, TextWriter output, Options options)
+        {
+            if (!ocs.Any())
+                return;
+            var example = CreateOptionsExample(ocs);
+            var json = JsonSerializer.Serialize(example, new JsonSerializerOptions{WriteIndented = true});
+            output.WriteLine($"## {title} ({ocs.Length} sections)");
+            output.WriteLine("**WARNING** This is a sample configuration containing example values. Do not use it without modifying it to reflect your environment.");
+            output.WriteLine($"``` json");
+            output.WriteLine(json);
+            output.WriteLine($"```");
+        }
+
+        private Dictionary<string, object> CreateOptionsExample(OptionsClassInfo[] ocs)
+        {
+            var result = new Dictionary<string, object>();
+            foreach (var oc in ocs)
+            {
+                var path = oc.ConfigSection.Split(':');
+                var currentLevel = result;
+                foreach (var segment in path)
+                {
+                    if (!currentLevel.TryGetValue(segment, out var level))
+                    {
+                        level = new Dictionary<string, object>();
+                        currentLevel.Add(segment, level);
+                    }
+                    currentLevel = (Dictionary<string, object>)level;
+                }
+                foreach (var property in oc.Properties)
+                {
+                    if (property.Type.StartsWith("Func<"))
+                        continue;
+                    currentLevel.Add(property.Name, GetPropertyExampleByType(property));
+                }
+            }
+
+            return result;
+        }
+
+        private object GetPropertyExampleByType(OptionsPropertyInfo property)
+        {
+            switch (property.Type)
+            {
+                case "bool": return true;
+                case "int": return 0;
+                case "float": return 0.1;
+                case "double": return 0.1;
+                case "DateTime": return new DateTime(2023, 10, 19, 9, 45, 18);
+                case "string": return "_stringValue_";
+            }
+
+            return new object();
         }
 
         public override void WriteOperation(OperationInfo op, TextWriter output, Options options)

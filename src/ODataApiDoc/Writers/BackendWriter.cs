@@ -65,10 +65,69 @@ namespace ODataApiDoc.Writers
                 }
             }
         }
+        public override void WriteTable(string title, OptionsClassInfo[] ocs, TextWriter output, Options options)
+        {
+            if (!ocs.Any())
+                return;
+
+            output.WriteLine($"## {title} ({ocs.Length} classes)");
+
+            var ordered = ocs.OrderBy(o => o.File).ThenBy(o => o.ClassName);
+            output.WriteLine("| OptionClass | Category | Repository | Project | File | Directory |");
+            output.WriteLine("| ----------- | -------- | ---------- | ------- | ---- | --------- |");
+            foreach (var oc in ordered)
+            {
+                if (options.FileLevel == FileLevel.Category)
+                {
+                    output.WriteLine("| [{0}](/options/{1}#{2}) | [{3}](/options/{1}) | {4} | {5} | {6} | {7} | ",
+                        oc.ClassName,
+                        oc.CategoryInLink,
+                        oc.ClassNameInLink,
+                        oc.Category,
+                        oc.GithubRepository,
+                        oc.ProjectName,
+                        Path.GetFileName(oc.FileRelative),
+                        Path.GetDirectoryName(oc.FileRelative));
+                }
+                else if (options.FileLevel == FileLevel.Operation)
+                {
+                    output.WriteLine("| [{0}](/options/{1}/{2}) | {3} | {4} | {5} | {6} | {7} |",
+                        oc.ClassName,
+                        oc.CategoryInLink,
+                        oc.ClassNameInLink,
+                        oc.Category,
+                        oc.GithubRepository,
+                        oc.ProjectName,
+                        Path.GetFileName(oc.FileRelative),
+                        Path.GetDirectoryName(oc.FileRelative));
+                }
+                else if (options.FileLevel == FileLevel.OperationNoCategories)
+                {
+                    output.WriteLine("| [{0}](/options/{2}) | {3} | {4} | {5} | {6} | {7} |",
+                        oc.ClassName,
+                        oc.CategoryInLink,
+                        oc.ClassNameInLink,
+                        oc.Category,
+                        oc.GithubRepository,
+                        oc.ProjectName,
+                        Path.GetFileName(oc.FileRelative),
+                        Path.GetDirectoryName(oc.FileRelative));
+                }
+                else
+                {
+                    throw GetNotSupportedFileLevelException(options.FileLevel);
+                }
+            }
+        }
 
         public override void WriteTree(string title, OperationInfo[] ops, TextWriter output, Options options)
         {
             output.WriteLine($"## {title} ({ops.Length})");
+            output.WriteLine($"### ... coming soon.");
+        }
+        public override void WriteTree(string title, OptionsClassInfo[] ocs, TextWriter output, Options options)
+        {
+            output.WriteLine($"## {title} ({ocs.Length} classes)");
             output.WriteLine($"### ... coming soon.");
         }
 

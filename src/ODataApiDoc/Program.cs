@@ -45,7 +45,7 @@ namespace ODataApiDoc
             var parser = new OperationParser(options);
             var parserResult =  parser.Parse();
             var operations = parserResult.Operations;
-            var optionsClasses = parserResult.OptionsClasses;
+            var optionsClasses = parserResult.OptionsClasses.ToArray();
 
             Console.WriteLine(" ".PadRight(Console.BufferWidth - 1));
 
@@ -84,11 +84,11 @@ namespace ODataApiDoc
         }
 
         private static void WriteGenerationInfo(TextWriter writer, Options options,
-            List<OperationInfo> operations, OperationInfo[] coreOps, List<OptionsClassInfo> optionClasses)
+            List<OperationInfo> operations, OperationInfo[] coreOps, OptionsClassInfo[] optionClasses)
         {
             writer.WriteLine("Path:            {0}", options.Input);
             writer.WriteLine("Operations:      {0}", operations.Count);
-            writer.WriteLine("Options classes: {0}", optionClasses.Count);
+            writer.WriteLine("Options classes: {0}", optionClasses.Length);
 
 
             var issuedOperations = new List<(OperationInfo op, List<string> parameters)>();
@@ -218,7 +218,7 @@ namespace ODataApiDoc
 
         private static void WriteOutput(List<OperationInfo> operations,
             OperationInfo[] coreOps, OperationInfo[] fwOps, OperationInfo[] testOps,
-            List<OptionsClassInfo> optionClasses,
+            OptionsClassInfo[] optionClasses,
             bool forBackend, Options options)
         {
             var outputDir = Path.Combine(options.Output, forBackend ? "backend" : "frontend");
@@ -265,6 +265,16 @@ namespace ODataApiDoc
             }
             writer.WriteOperations(options.All ? operations.ToArray() : coreOps, operationsOutputDir, options);
 
+            using (var headWriter = new StreamWriter(Path.Combine(optionClassesOutputDir, "index.md"), false))
+            {
+                writer.WriteHead("Option class references", headWriter);
+                writer.WriteTable("Option classes", optionClasses, headWriter, options);
+            }
+            using (var treeWriter = new StreamWriter(Path.Combine(optionClassesOutputDir, "cheatsheet.md"), false))
+            {
+                writer.WriteHead("Option class references", treeWriter);
+                writer.WriteTree("CHEAT SHEET", optionClasses, treeWriter, options);
+            }
             writer.WriteOptionClasses(optionClasses, optionClassesOutputDir, options);
         }
     }
